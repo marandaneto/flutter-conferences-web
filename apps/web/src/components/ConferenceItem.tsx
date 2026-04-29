@@ -8,6 +8,11 @@ import {
   dateAtMidnight,
 } from "@fc/shared";
 import { getMe, type AuthMe } from "../api";
+import {
+  googleCalendarUrl,
+  icsDataUrl,
+  icsFilename,
+} from "../lib/calendar";
 
 const badge = "inline-block ml-2 px-2 py-0.5 text-xs rounded";
 
@@ -62,6 +67,25 @@ export function ConferenceItem({ c }: { c: Conference }) {
           Happening Now
         </span>
       )}
+      <a
+        href={googleCalendarUrl(c)}
+        target="_blank"
+        rel="noreferrer"
+        title="Add to Google Calendar"
+        aria-label="Add to Google Calendar"
+        className="ml-2 text-slate-400 hover:text-slate-700"
+      >
+        📅
+      </a>
+      <a
+        href={icsDataUrl(c)}
+        download={icsFilename(c)}
+        title="Download .ics for Apple Calendar / Outlook"
+        aria-label="Download .ics"
+        className="ml-1 text-slate-400 hover:text-slate-700"
+      >
+        📥
+      </a>
       {canSuggestEdit && (
         <Link
           to={`/suggest-edit/${c.slug}`}
