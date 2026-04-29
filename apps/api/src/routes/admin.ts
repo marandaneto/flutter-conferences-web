@@ -1,5 +1,6 @@
-import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { and, asc, desc, eq } from "drizzle-orm";
+import type { FastifyInstance } from "fastify";
+import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { z } from "zod";
 import {
   conferenceInputSchema,
   conferencePatchSchema,
@@ -8,23 +9,18 @@ import {
   type ModerationStatus,
 } from "@fc/shared";
 import { db } from "../db/client.js";
-import { conferences } from "../db/schema.js";
+import { conferences, invites, users } from "../db/schema.js";
 import { makeSlug } from "../lib/slug.js";
 import { rowToConference } from "../lib/serialize.js";
-import { env } from "../env.js";
-
-function requireAdmin(req: FastifyRequest, reply: FastifyReply) {
-  const auth = req.headers.authorization;
-  if (auth !== `Bearer ${env.ADMIN_TOKEN}`) {
-    reply.code(401).send({ error: "unauthorized" });
-    return false;
-  }
-  return true;
-}
+import { resolveAuth } from "../lib/auth.js";
 
 export async function adminRoutes(app: FastifyInstance) {
   app.addHook("onRequest", async (req, reply) => {
-    if (!requireAdmin(req, reply)) return reply;
+    const auth = await resolveAuth(req);
+    if (auth.kind === "none") {
+      return reply.code(401).send({ error: "unauthorized" });
+    }
+    (req as any).auth = auth;
   });
 
   app.get("/api/admin/conferences", async (req) => {
@@ -142,6 +138,99 @@ export async function adminRoutes(app: FastifyInstance) {
       .delete(conferences)
       .where(eq(conferences.id, id))
       .returning({ id: conferences.id });
+    if (!row) return reply.code(404).send({ error: "not found" });
+    return reply.code(204).send();
+  });
+
+  app.get("/api/admin/members", async () => {
+    const rows = await db
+      .select()
+      .from(users)
+      .orderBy(asc(users.githubLogin));
+    return rows.map((u) => ({
+      id: u.id,
+      githubLogin: u.githubLogin,
+      name: u.name,
+      email: u.email,
+      avatarUrl: u.avatarUrl,
+      createdAt: u.createdAt.toISOString(),
+    }));
+  });
+
+  app.delete("/api/admin/members/:id", async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const [row] = await db
+      .delete(users)
+      .where(eq(users.id, id))
+      .returning({ id: users.id });
+    if (!row) return reply.code(404).send({ error: "not found" });
+    return reply.code(204).send();
+  });
+
+  app.get("/api/admin/invites", async () => {
+    const rows = await db
+      .select()
+      .from(invites)
+      .where(isNull(invites.acceptedAt))
+      .orderBy(desc(invites.createdAt));
+    return rows.map((i) => ({
+      id: i.id,
+      githubLogin: i.githubLogin,
+      createdAt: i.createdAt.toISOString(),
+      acceptedAt: i.acceptedAt ? i.acceptedAt.toISOString() : null,
+    }));
+  });
+
+  const inviteSchema = z.object({
+    githubLogin: z
+      .string()
+      .min(1)
+      .max(40)
+      .regex(/^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/, {
+        message: "invalid github username",
+      }),
+  });
+
+  app.post("/api/admin/invites", async (req, reply) => {
+    const parsed = inviteSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ issues: parsed.error.flatten() });
+    }
+    const login = parsed.data.githubLogin;
+
+    const existingUser = await db.query.users.findFirst({
+      where: eq(users.githubLogin, login),
+    });
+    if (existingUser) {
+      return reply.code(409).send({ error: "already a member" });
+    }
+    const existingInvite = await db.query.invites.findFirst({
+      where: eq(invites.githubLogin, login),
+    });
+    if (existingInvite) {
+      return reply.code(409).send({ error: "already invited" });
+    }
+
+    const auth = (req as any).auth;
+    const invitedBy = auth?.kind === "user" ? auth.user.id : null;
+    const [row] = await db
+      .insert(invites)
+      .values({ githubLogin: login, invitedBy })
+      .returning();
+    return reply.code(201).send({
+      id: row!.id,
+      githubLogin: row!.githubLogin,
+      createdAt: row!.createdAt.toISOString(),
+      acceptedAt: null,
+    });
+  });
+
+  app.delete("/api/admin/invites/:id", async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const [row] = await db
+      .delete(invites)
+      .where(eq(invites.id, id))
+      .returning({ id: invites.id });
     if (!row) return reply.code(404).send({ error: "not found" });
     return reply.code(204).send();
   });

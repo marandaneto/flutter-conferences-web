@@ -8,6 +8,13 @@
       "when": 1777194171745,
       "tag": "0000_fantastic_rachel_grey",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777457475382,
+      "tag": "0001_goofy_deathstrike",
+      "breakpoints": true
     }
   ]
 }
