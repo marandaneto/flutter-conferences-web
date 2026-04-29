@@ -1,16 +1,17 @@
 import { env } from "../env.js";
 
 type SendArgs = {
+  to: string;
   subject: string;
   html: string;
   text: string;
 };
 
-export async function sendNotification(
+export async function sendEmail(
   log: { error: (...args: unknown[]) => void },
   args: SendArgs,
 ): Promise<void> {
-  if (!env.RESEND_API_KEY || !env.NOTIFICATION_EMAIL) return;
+  if (!env.RESEND_API_KEY) return;
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -21,7 +22,7 @@ export async function sendNotification(
       },
       body: JSON.stringify({
         from: env.NOTIFICATION_FROM,
-        to: [env.NOTIFICATION_EMAIL],
+        to: [args.to],
         subject: args.subject,
         html: args.html,
         text: args.text,
@@ -29,11 +30,19 @@ export async function sendNotification(
     });
     if (!res.ok) {
       const body = await res.text();
-      log.error({ status: res.status, body }, "resend send failed");
+      log.error({ status: res.status, body, to: args.to }, "resend send failed");
     }
   } catch (err) {
-    log.error({ err }, "resend send threw");
+    log.error({ err, to: args.to }, "resend send threw");
   }
+}
+
+export async function sendNotification(
+  log: { error: (...args: unknown[]) => void },
+  args: Omit<SendArgs, "to">,
+): Promise<void> {
+  if (!env.NOTIFICATION_EMAIL) return;
+  await sendEmail(log, { ...args, to: env.NOTIFICATION_EMAIL });
 }
 
 export function escapeHtml(value: string): string {

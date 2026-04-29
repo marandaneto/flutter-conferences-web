@@ -13,6 +13,8 @@ import { conferences, invites, users } from "../db/schema.js";
 import { makeSlug } from "../lib/slug.js";
 import { rowToConference } from "../lib/serialize.js";
 import { resolveAuth } from "../lib/auth.js";
+import { sendEmail, escapeHtml } from "../lib/email.js";
+import { env } from "../env.js";
 
 export async function adminRoutes(app: FastifyInstance) {
   app.addHook("onRequest", async (req, reply) => {
@@ -101,6 +103,10 @@ export async function adminRoutes(app: FastifyInstance) {
 
   app.post("/api/admin/conferences/:id/approve", async (req, reply) => {
     const { id } = req.params as { id: string };
+    const previous = await db.query.conferences.findFirst({
+      where: eq(conferences.id, id),
+    });
+    if (!previous) return reply.code(404).send({ error: "not found" });
     const [row] = await db
       .update(conferences)
       .set({
@@ -112,6 +118,9 @@ export async function adminRoutes(app: FastifyInstance) {
       .where(eq(conferences.id, id))
       .returning();
     if (!row) return reply.code(404).send({ error: "not found" });
+    if (previous.moderationStatus !== "approved") {
+      void notifySubmitterApproved(req.log, row);
+    }
     return rowToConference(row);
   });
 
@@ -121,6 +130,10 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ issues: parsed.error.flatten() });
     }
+    const previous = await db.query.conferences.findFirst({
+      where: eq(conferences.id, id),
+    });
+    if (!previous) return reply.code(404).send({ error: "not found" });
     const [row] = await db
       .update(conferences)
       .set({
@@ -132,6 +145,9 @@ export async function adminRoutes(app: FastifyInstance) {
       .where(eq(conferences.id, id))
       .returning();
     if (!row) return reply.code(404).send({ error: "not found" });
+    if (previous.moderationStatus !== "rejected") {
+      void notifySubmitterRejected(req.log, row);
+    }
     return rowToConference(row);
   });
 
@@ -259,4 +275,58 @@ async function uniqueSlug(base: string): Promise<string> {
     n += 1;
     candidate = `${base}-${n}`;
   }
+}
+
+type ConfRow = typeof conferences.$inferSelect;
+
+async function notifySubmitterApproved(
+  log: { error: (...args: unknown[]) => void },
+  row: ConfRow,
+) {
+  if (!row.submitterEmail) return;
+  const siteUrl = env.WEB_URL.replace(/\/$/, "");
+  const subject = `Your suggestion was approved: ${row.name}`;
+  const text = [
+    `Hi${row.submitterName ? ` ${row.submitterName}` : ""},`,
+    ``,
+    `Your conference suggestion "${row.name}" has been approved and is now listed publicly.`,
+    ``,
+    `View it: ${siteUrl}/`,
+    ``,
+    `Thanks for contributing!`,
+  ].join("\n");
+  const html = `
+    <p>Hi${row.submitterName ? ` ${escapeHtml(row.submitterName)}` : ""},</p>
+    <p>Your conference suggestion <strong>${escapeHtml(row.name)}</strong> has been approved and is now listed publicly.</p>
+    <p><a href="${siteUrl}/">View the live list</a></p>
+    <p>Thanks for contributing!</p>
+  `;
+  await sendEmail(log, { to: row.submitterEmail, subject, html, text });
+}
+
+async function notifySubmitterRejected(
+  log: { error: (...args: unknown[]) => void },
+  row: ConfRow,
+) {
+  if (!row.submitterEmail) return;
+  const siteUrl = env.WEB_URL.replace(/\/$/, "");
+  const subject = `Your suggestion wasn't accepted: ${row.name}`;
+  const reason = row.rejectionReason ?? "";
+  const text = [
+    `Hi${row.submitterName ? ` ${row.submitterName}` : ""},`,
+    ``,
+    `Your conference suggestion "${row.name}" was reviewed but not accepted.`,
+    reason ? `\nReason: ${reason}\n` : "",
+    `You're welcome to submit a revised suggestion: ${siteUrl}/suggest`,
+    ``,
+    `Thanks anyway!`,
+  ].join("\n");
+  const html = `
+    <p>Hi${row.submitterName ? ` ${escapeHtml(row.submitterName)}` : ""},</p>
+    <p>Your conference suggestion <strong>${escapeHtml(row.name)}</strong> was reviewed but not accepted.</p>
+    ${reason ? `<p><strong>Reason:</strong> ${escapeHtml(reason)}</p>` : ""}
+    <p>You're welcome to <a href="${siteUrl}/suggest">submit a revised suggestion</a>.</p>
+    <p>Thanks anyway!</p>
+  `;
+  await sendEmail(log, { to: row.submitterEmail, subject, html, text });
 }
