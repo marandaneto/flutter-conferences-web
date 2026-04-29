@@ -162,8 +162,10 @@ export async function adminRoutes(app: FastifyInstance) {
     const [row] = await db
       .delete(users)
       .where(eq(users.id, id))
-      .returning({ id: users.id });
+      .returning({ id: users.id, githubLogin: users.githubLogin });
     if (!row) return reply.code(404).send({ error: "not found" });
+    // Drop the historical invite so they can be re-invited later.
+    await db.delete(invites).where(eq(invites.githubLogin, row.githubLogin));
     return reply.code(204).send();
   });
 
@@ -208,7 +210,12 @@ export async function adminRoutes(app: FastifyInstance) {
       where: eq(invites.githubLogin, login),
     });
     if (existingInvite) {
-      return reply.code(409).send({ error: "already invited" });
+      if (!existingInvite.acceptedAt) {
+        return reply.code(409).send({ error: "already invited" });
+      }
+      // Previously accepted invite, but the user no longer exists.
+      // Clear it so we can issue a fresh invite.
+      await db.delete(invites).where(eq(invites.id, existingInvite.id));
     }
 
     const auth = (req as any).auth;
