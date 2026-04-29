@@ -16,9 +16,6 @@ export function Layout() {
           <NavLink to="/" end className={navClass}>
             Upcoming
           </NavLink>
-          <NavLink to="/online" className={navClass}>
-            Online
-          </NavLink>
           <NavLink to="/past" className={navClass}>
             Past
           </NavLink>
