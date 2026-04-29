@@ -20,6 +20,9 @@ export async function adminRoutes(app: FastifyInstance) {
     if (auth.kind === "none") {
       return reply.code(401).send({ error: "unauthorized" });
     }
+    if (auth.kind === "user" && !auth.user.isAdmin) {
+      return reply.code(403).send({ error: "not an admin" });
+    }
     (req as any).auth = auth;
   });
 
@@ -146,6 +149,7 @@ export async function adminRoutes(app: FastifyInstance) {
     const rows = await db
       .select()
       .from(users)
+      .where(eq(users.isAdmin, true))
       .orderBy(asc(users.githubLogin));
     return rows.map((u) => ({
       id: u.id,

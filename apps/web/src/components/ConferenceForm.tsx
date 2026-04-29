@@ -8,15 +8,12 @@ import {
 export type ConferenceFormProps = {
   initial?: Partial<ConferenceInput>;
   submitLabel: string;
-  showSubmitterFields?: boolean;
+  showNote?: boolean;
   onSubmit: (input: ConferenceInput, extras: SubmitterExtras) => Promise<void>;
 };
 
 export type SubmitterExtras = {
-  submitterName?: string;
-  submitterEmail?: string;
   submissionNote?: string;
-  honeypot: string;
 };
 
 const inputClass =
@@ -26,7 +23,7 @@ const labelClass = "block text-sm font-medium text-slate-700 mb-1";
 export function ConferenceForm({
   initial,
   submitLabel,
-  showSubmitterFields,
+  showNote,
   onSubmit,
 }: ConferenceFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
@@ -44,10 +41,7 @@ export function ConferenceForm({
   const [cfpEnd, setCfpEnd] = useState(initial?.cfp?.end ?? "");
   const [cfpSite, setCfpSite] = useState(initial?.cfp?.site ?? "");
 
-  const [submitterName, setSubmitterName] = useState("");
-  const [submitterEmail, setSubmitterEmail] = useState("");
   const [submissionNote, setSubmissionNote] = useState("");
-  const [honeypot, setHoneypot] = useState("");
 
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -78,10 +72,7 @@ export function ConferenceForm({
     setPending(true);
     try {
       await onSubmit(parsed.data, {
-        submitterName: submitterName || undefined,
-        submitterEmail: submitterEmail || undefined,
         submissionNote: submissionNote || undefined,
-        honeypot,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Submission failed");
@@ -155,31 +146,17 @@ export function ConferenceForm({
         )}
       </fieldset>
 
-      {showSubmitterFields && (
-        <fieldset className="border border-slate-200 rounded-md p-3 space-y-3">
-          <legend className="text-sm px-1">About you (optional)</legend>
-          <div>
-            <label className={labelClass}>Your name</label>
-            <input className={inputClass} value={submitterName} onChange={(e) => setSubmitterName(e.target.value)} />
-          </div>
-          <div>
-            <label className={labelClass}>Your email</label>
-            <input className={inputClass} type="email" value={submitterEmail} onChange={(e) => setSubmitterEmail(e.target.value)} />
-          </div>
-          <div>
-            <label className={labelClass}>Note (anything we should know)</label>
-            <textarea className={inputClass} rows={3} value={submissionNote} onChange={(e) => setSubmissionNote(e.target.value)} />
-          </div>
-          <div aria-hidden className="absolute -left-[10000px] top-auto h-px w-px overflow-hidden">
-            <label>Confirm website</label>
-            <input
-              tabIndex={-1}
-              autoComplete="off"
-              value={honeypot}
-              onChange={(e) => setHoneypot(e.target.value)}
-            />
-          </div>
-        </fieldset>
+      {showNote && (
+        <div>
+          <label className={labelClass}>Note (anything we should know)</label>
+          <textarea
+            className={inputClass}
+            rows={3}
+            value={submissionNote}
+            onChange={(e) => setSubmissionNote(e.target.value)}
+            placeholder="Optional context for the reviewer"
+          />
+        </div>
       )}
 
       {error && <p className="text-sm text-rose-700">{error}</p>}

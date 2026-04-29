@@ -12,6 +12,7 @@ export type Member = {
   name: string | null;
   email: string | null;
   avatarUrl: string | null;
+  isAdmin?: boolean;
   createdAt: string;
 };
 
@@ -105,8 +106,10 @@ export function logout() {
   return api<{ ok: true }>("/api/auth/logout", { method: "POST" });
 }
 
-export function githubLoginUrl(): string {
-  return url("/auth/github/start");
+export function githubLoginUrl(returnTo?: string): string {
+  const path = "/auth/github/start";
+  if (!returnTo) return url(path);
+  return url(`${path}?return_to=${encodeURIComponent(returnTo)}`);
 }
 
 // Admin: conferences

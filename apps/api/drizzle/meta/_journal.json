@@ -15,6 +15,13 @@
       "when": 1777457475382,
       "tag": "0001_goofy_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777466412763,
+      "tag": "0002_stiff_lifeguard",
+      "breakpoints": true
     }
   ]
 }

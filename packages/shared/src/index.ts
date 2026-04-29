@@ -48,15 +48,16 @@ export const conferencePatchSchema = conferenceObjectSchema.partial();
 
 export type ConferenceInput = z.infer<typeof conferenceInputSchema>;
 
-export const submissionInputSchema = conferenceInputSchema.and(
-  z.object({
-    submitterName: z.string().max(120).optional().nullable(),
-    submitterEmail: z.string().email().max(200).optional().nullable(),
+// Submitter identity is taken from the signed-in user; only a free-form note can
+// accompany the conference fields.
+export const submissionInputSchema = conferenceObjectSchema
+  .extend({
     submissionNote: z.string().max(2000).optional().nullable(),
-    // Honeypot: bots fill all visible inputs. Validated server-side by checking it's empty.
-    website_confirm: z.string().optional().default(""),
-  }),
-);
+  })
+  .refine((c) => c.dateStart <= c.dateEnd, {
+    message: "dateStart must be on or before dateEnd",
+    path: ["dateEnd"],
+  });
 
 export type SubmissionInput = z.infer<typeof submissionInputSchema>;
 

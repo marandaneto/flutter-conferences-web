@@ -1,9 +1,17 @@
 import type { FastifyInstance } from "fastify";
-import { submissionInputSchema } from "@fc/shared";
+import { conferenceInputSchema } from "@fc/shared";
+import { z } from "zod";
 import { db } from "../db/client.js";
 import { conferences } from "../db/schema.js";
 import { makeSlug } from "../lib/slug.js";
 import { rowToConference } from "../lib/serialize.js";
+import { resolveAuth } from "../lib/auth.js";
+
+const submissionBodySchema = conferenceInputSchema.and(
+  z.object({
+    submissionNote: z.string().max(2000).optional().nullable(),
+  }),
+);
 
 export async function submissionRoutes(app: FastifyInstance) {
   app.post(
@@ -17,7 +25,12 @@ export async function submissionRoutes(app: FastifyInstance) {
       },
     },
     async (req, reply) => {
-      const parsed = submissionInputSchema.safeParse(req.body);
+      const auth = await resolveAuth(req);
+      if (auth.kind !== "user") {
+        return reply.code(401).send({ error: "sign in to submit" });
+      }
+
+      const parsed = submissionBodySchema.safeParse(req.body);
       if (!parsed.success) {
         return reply.code(400).send({
           error: "invalid",
@@ -25,11 +38,7 @@ export async function submissionRoutes(app: FastifyInstance) {
         });
       }
       const data = parsed.data;
-
-      // Honeypot trip — pretend to succeed so bots don't retry.
-      if (data.website_confirm && data.website_confirm.length > 0) {
-        return reply.code(202).send({ ok: true });
-      }
+      const submitter = auth.user;
 
       const slug = await uniqueSlug(makeSlug(data.name, data.dateStart));
 
@@ -47,8 +56,9 @@ export async function submissionRoutes(app: FastifyInstance) {
           cfpStart: data.cfp?.start ?? null,
           cfpEnd: data.cfp?.end ?? null,
           cfpSite: data.cfp?.site ?? null,
-          submitterName: data.submitterName ?? null,
-          submitterEmail: data.submitterEmail ?? null,
+          submitterName:
+            submitter.name ?? `@${submitter.githubLogin}`,
+          submitterEmail: submitter.email,
           submissionNote: data.submissionNote ?? null,
           moderationStatus: "pending",
         })

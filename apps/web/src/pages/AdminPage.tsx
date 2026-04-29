@@ -31,7 +31,6 @@ import type { Conference } from "@fc/shared";
 type Tab = "pending" | "all" | "new" | "members";
 
 const AUTH_ERRORS: Record<string, string> = {
-  not_invited: "That GitHub account isn't invited. Ask an admin to invite you.",
   github_token_exchange_failed: "GitHub sign-in failed during token exchange.",
   github_no_token: "GitHub didn't return an access token.",
   github_user_fetch_failed: "Couldn't fetch your GitHub profile.",
@@ -83,6 +82,9 @@ export function AdminPage() {
 
   const me = meQuery.data;
   const isAuthed = !!me?.authenticated;
+  const isAdmin =
+    me?.authenticated &&
+    (me.kind === "token" || (me.kind === "user" && me.user.isAdmin));
 
   if (!isAuthed) {
     return (
@@ -96,6 +98,33 @@ export function AdminPage() {
           qc.invalidateQueries({ queryKey: ["auth", "me"] });
         }}
       />
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="max-w-md space-y-3">
+        <h2 className="text-lg font-semibold">No admin access</h2>
+        <p className="text-sm text-slate-600">
+          You're signed in
+          {me?.authenticated && me.kind === "user" && (
+            <> as <span className="font-medium">@{me.user.githubLogin}</span></>
+          )}
+          {" "}but don't have admin access. Ask an admin to invite you.
+        </p>
+        <button
+          className="text-sm underline text-slate-600"
+          onClick={async () => {
+            if (me?.authenticated && me.kind === "user") {
+              await logoutApi().catch(() => {});
+            }
+            setAdminToken(null);
+            qc.invalidateQueries({ queryKey: ["auth", "me"] });
+          }}
+        >
+          Sign out
+        </button>
+      </div>
     );
   }
 

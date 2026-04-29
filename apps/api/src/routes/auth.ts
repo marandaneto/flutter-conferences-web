@@ -22,6 +22,7 @@ function publicUser(u: UserRow) {
     name: u.name,
     email: u.email,
     avatarUrl: u.avatarUrl,
+    isAdmin: u.isAdmin,
     createdAt: u.createdAt.toISOString(),
   };
 }
@@ -123,17 +124,16 @@ export async function authRoutes(app: FastifyInstance) {
       avatar_url: string | null;
     };
 
+    const pendingInvite = await db.query.invites.findFirst({
+      where: eq(invites.githubLogin, ghUser.login),
+    });
+    const shouldGrantAdmin = !!pendingInvite && !pendingInvite.acceptedAt;
+
     let user = await db.query.users.findFirst({
       where: eq(users.githubId, ghUser.id),
     });
 
     if (!user) {
-      const invite = await db.query.invites.findFirst({
-        where: eq(invites.githubLogin, ghUser.login),
-      });
-      if (!invite) {
-        return redirectWithError(reply, returnTo, "not_invited");
-      }
       const [created] = await db
         .insert(users)
         .values({
@@ -142,24 +142,27 @@ export async function authRoutes(app: FastifyInstance) {
           name: ghUser.name,
           email: ghUser.email,
           avatarUrl: ghUser.avatar_url,
+          isAdmin: shouldGrantAdmin,
         })
         .returning();
       user = created!;
+    } else {
+      const update: Record<string, unknown> = {
+        githubLogin: ghUser.login,
+        name: ghUser.name,
+        email: ghUser.email,
+        avatarUrl: ghUser.avatar_url,
+        updatedAt: new Date(),
+      };
+      if (shouldGrantAdmin) update.isAdmin = true;
+      await db.update(users).set(update).where(eq(users.id, user.id));
+    }
+
+    if (shouldGrantAdmin) {
       await db
         .update(invites)
         .set({ acceptedAt: new Date() })
-        .where(eq(invites.id, invite.id));
-    } else {
-      await db
-        .update(users)
-        .set({
-          githubLogin: ghUser.login,
-          name: ghUser.name,
-          email: ghUser.email,
-          avatarUrl: ghUser.avatar_url,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, user.id));
+        .where(eq(invites.id, pendingInvite!.id));
     }
 
     const sid = await createSessionForUser(user.id);
