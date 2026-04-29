@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, inArray } from "drizzle-orm";
 import { z } from "zod";
 import {
   conferenceInputSchema,
@@ -9,7 +9,7 @@ import {
   type ModerationStatus,
 } from "@fc/shared";
 import { db } from "../db/client.js";
-import { conferences, invites, users } from "../db/schema.js";
+import { conferences, conferenceEdits, invites, users } from "../db/schema.js";
 import { makeSlug } from "../lib/slug.js";
 import { rowToConference } from "../lib/serialize.js";
 import { resolveAuth } from "../lib/auth.js";
@@ -261,6 +261,172 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!row) return reply.code(404).send({ error: "not found" });
     return reply.code(204).send();
   });
+
+  app.get("/api/admin/edits", async (req) => {
+    const status = (req.query as { status?: string }).status as
+      | ModerationStatus
+      | undefined;
+    const where =
+      status && MODERATION_STATUSES.includes(status)
+        ? eq(conferenceEdits.moderationStatus, status)
+        : undefined;
+    const rows = await db
+      .select()
+      .from(conferenceEdits)
+      .where(where!)
+      .orderBy(desc(conferenceEdits.createdAt));
+
+    if (rows.length === 0) return [];
+
+    const conferenceIds = [...new Set(rows.map((r) => r.conferenceId))];
+    const submitterIds = [
+      ...new Set(rows.map((r) => r.submitterUserId).filter(Boolean) as string[]),
+    ];
+    const targets = conferenceIds.length
+      ? await db
+          .select()
+          .from(conferences)
+          .where(inArray(conferences.id, conferenceIds))
+      : [];
+    const submitters = submitterIds.length
+      ? await db.select().from(users).where(inArray(users.id, submitterIds))
+      : [];
+    const targetById = new Map(targets.map((t) => [t.id, t]));
+    const submitterById = new Map(submitters.map((u) => [u.id, u]));
+
+    return rows.map((edit) => {
+      const target = targetById.get(edit.conferenceId);
+      const submitter = edit.submitterUserId
+        ? submitterById.get(edit.submitterUserId)
+        : null;
+      return {
+        id: edit.id,
+        moderationStatus: edit.moderationStatus,
+        rejectionReason: edit.rejectionReason,
+        submissionNote: edit.submissionNote,
+        proposed: edit.proposed,
+        createdAt: edit.createdAt.toISOString(),
+        reviewedAt: edit.reviewedAt ? edit.reviewedAt.toISOString() : null,
+        target: target ? rowToConference(target) : null,
+        submitter: submitter
+          ? {
+              id: submitter.id,
+              githubLogin: submitter.githubLogin,
+              name: submitter.name,
+              email: submitter.email,
+              avatarUrl: submitter.avatarUrl,
+            }
+          : null,
+      };
+    });
+  });
+
+  app.post("/api/admin/edits/:id/approve", async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const edit = await db.query.conferenceEdits.findFirst({
+      where: eq(conferenceEdits.id, id),
+    });
+    if (!edit) return reply.code(404).send({ error: "not found" });
+    if (edit.moderationStatus === "approved") {
+      return reply.code(409).send({ error: "already approved" });
+    }
+    const target = await db.query.conferences.findFirst({
+      where: eq(conferences.id, edit.conferenceId),
+    });
+    if (!target) return reply.code(404).send({ error: "conference gone" });
+
+    const p = edit.proposed;
+    await db
+      .update(conferences)
+      .set({
+        name: p.name,
+        website: p.website,
+        location: p.location,
+        online: p.online,
+        eventStatus: p.eventStatus ?? null,
+        dateStart: p.dateStart,
+        dateEnd: p.dateEnd,
+        cfpStart: p.cfp?.start ?? null,
+        cfpEnd: p.cfp?.end ?? null,
+        cfpSite: p.cfp?.site ?? null,
+        updatedAt: new Date(),
+      })
+      .where(eq(conferences.id, target.id));
+
+    const [updatedEdit] = await db
+      .update(conferenceEdits)
+      .set({
+        moderationStatus: "approved",
+        reviewedAt: new Date(),
+        rejectionReason: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(conferenceEdits.id, id))
+      .returning();
+
+    if (edit.submitterUserId) {
+      const submitter = await db.query.users.findFirst({
+        where: eq(users.id, edit.submitterUserId),
+      });
+      if (submitter?.email) {
+        void notifyEditApproved(req.log, target.name, submitter);
+      }
+    }
+
+    return reply.send({ ok: true, edit: updatedEdit });
+  });
+
+  app.post("/api/admin/edits/:id/reject", async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const parsed = rejectInputSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ issues: parsed.error.flatten() });
+    }
+    const edit = await db.query.conferenceEdits.findFirst({
+      where: eq(conferenceEdits.id, id),
+    });
+    if (!edit) return reply.code(404).send({ error: "not found" });
+    const [row] = await db
+      .update(conferenceEdits)
+      .set({
+        moderationStatus: "rejected",
+        rejectionReason: parsed.data.reason,
+        reviewedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(conferenceEdits.id, id))
+      .returning();
+    if (edit.submitterUserId) {
+      const submitter = await db.query.users.findFirst({
+        where: eq(users.id, edit.submitterUserId),
+      });
+      if (submitter?.email) {
+        const target = await db.query.conferences.findFirst({
+          where: eq(conferences.id, edit.conferenceId),
+          columns: { name: true },
+        });
+        if (target) {
+          void notifyEditRejected(
+            req.log,
+            target.name,
+            parsed.data.reason,
+            submitter,
+          );
+        }
+      }
+    }
+    return reply.send({ ok: true, edit: row });
+  });
+
+  app.delete("/api/admin/edits/:id", async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const [row] = await db
+      .delete(conferenceEdits)
+      .where(eq(conferenceEdits.id, id))
+      .returning({ id: conferenceEdits.id });
+    if (!row) return reply.code(404).send({ error: "not found" });
+    return reply.code(204).send();
+  });
 }
 
 async function uniqueSlug(base: string): Promise<string> {
@@ -302,6 +468,58 @@ async function notifySubmitterApproved(
     <p>Thanks for contributing!</p>
   `;
   await sendEmail(log, { to: row.submitterEmail, subject, html, text });
+}
+
+async function notifyEditApproved(
+  log: { error: (...args: unknown[]) => void },
+  conferenceName: string,
+  submitter: { name: string | null; email: string | null },
+) {
+  if (!submitter.email) return;
+  const siteUrl = env.WEB_URL.replace(/\/$/, "");
+  const subject = `Your edit was applied: ${conferenceName}`;
+  const text = [
+    `Hi${submitter.name ? ` ${submitter.name}` : ""},`,
+    ``,
+    `Your suggested edit to "${conferenceName}" has been applied.`,
+    ``,
+    `View it: ${siteUrl}/`,
+    ``,
+    `Thanks for keeping the list accurate!`,
+  ].join("\n");
+  const html = `
+    <p>Hi${submitter.name ? ` ${escapeHtml(submitter.name)}` : ""},</p>
+    <p>Your suggested edit to <strong>${escapeHtml(conferenceName)}</strong> has been applied.</p>
+    <p><a href="${siteUrl}/">View the live list</a></p>
+    <p>Thanks for keeping the list accurate!</p>
+  `;
+  await sendEmail(log, { to: submitter.email, subject, html, text });
+}
+
+async function notifyEditRejected(
+  log: { error: (...args: unknown[]) => void },
+  conferenceName: string,
+  reason: string,
+  submitter: { name: string | null; email: string | null },
+) {
+  if (!submitter.email) return;
+  const subject = `Your edit wasn't applied: ${conferenceName}`;
+  const text = [
+    `Hi${submitter.name ? ` ${submitter.name}` : ""},`,
+    ``,
+    `Your suggested edit to "${conferenceName}" was reviewed but not applied.`,
+    ``,
+    `Reason: ${reason}`,
+    ``,
+    `Thanks anyway!`,
+  ].join("\n");
+  const html = `
+    <p>Hi${submitter.name ? ` ${escapeHtml(submitter.name)}` : ""},</p>
+    <p>Your suggested edit to <strong>${escapeHtml(conferenceName)}</strong> was reviewed but not applied.</p>
+    <p><strong>Reason:</strong> ${escapeHtml(reason)}</p>
+    <p>Thanks anyway!</p>
+  `;
+  await sendEmail(log, { to: submitter.email, subject, html, text });
 }
 
 async function notifySubmitterRejected(

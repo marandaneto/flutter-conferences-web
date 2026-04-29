@@ -28,6 +28,26 @@ export type AuthMe =
   | { authenticated: true; kind: "user"; user: Member }
   | { authenticated: true; kind: "token" };
 
+export type EditSubmitter = {
+  id: string;
+  githubLogin: string;
+  name: string | null;
+  email: string | null;
+  avatarUrl: string | null;
+};
+
+export type EditSuggestion = {
+  id: string;
+  moderationStatus: "pending" | "approved" | "rejected";
+  rejectionReason: string | null;
+  submissionNote: string | null;
+  proposed: import("@fc/shared").ConferenceInput;
+  createdAt: string;
+  reviewedAt: string | null;
+  target: import("@fc/shared").Conference | null;
+  submitter: EditSubmitter | null;
+};
+
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -179,4 +199,45 @@ export function createInvite(githubLogin: string) {
 
 export function deleteInvite(id: string) {
   return api<void>(`/api/admin/invites/${id}`, { method: "DELETE" });
+}
+
+// Public: edit suggestions
+
+export function getConferenceBySlug(slug: string) {
+  return api<import("@fc/shared").Conference>(
+    `/api/conferences/${encodeURIComponent(slug)}`,
+  );
+}
+
+export function submitEdit(
+  slug: string,
+  input: ConferenceInput & { submissionNote?: string | null },
+) {
+  return api(`/api/conferences/${encodeURIComponent(slug)}/edits`, {
+    method: "POST",
+    json: input,
+  });
+}
+
+// Admin: edits
+
+export function listEdits(status?: "pending" | "approved" | "rejected") {
+  return api<EditSuggestion[]>(
+    status ? `/api/admin/edits?status=${status}` : "/api/admin/edits",
+  );
+}
+
+export function approveEdit(id: string) {
+  return api(`/api/admin/edits/${id}/approve`, { method: "POST" });
+}
+
+export function rejectEdit(id: string, reason: string) {
+  return api(`/api/admin/edits/${id}/reject`, {
+    method: "POST",
+    json: { reason },
+  });
+}
+
+export function deleteEdit(id: string) {
+  return api<void>(`/api/admin/edits/${id}`, { method: "DELETE" });
 }

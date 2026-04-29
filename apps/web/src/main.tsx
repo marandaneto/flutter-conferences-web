@@ -6,6 +6,7 @@ import { Layout } from "./Layout";
 import { UpcomingPage } from "./pages/UpcomingPage";
 import { PastPage } from "./pages/PastPage";
 import { SuggestPage } from "./pages/SuggestPage";
+import { SuggestEditPage } from "./pages/SuggestEditPage";
 import { AdminPage } from "./pages/AdminPage";
 import "./index.css";
 
@@ -22,6 +23,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route index element={<UpcomingPage />} />
             <Route path="past" element={<PastPage />} />
             <Route path="suggest" element={<SuggestPage />} />
+            <Route path="suggest-edit/:slug" element={<SuggestEditPage />} />
             <Route path="admin" element={<AdminPage />} />
           </Route>
         </Routes>

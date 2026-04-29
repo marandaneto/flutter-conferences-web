@@ -6,8 +6,10 @@ import {
   date,
   timestamp,
   bigint,
+  jsonb,
   index,
 } from "drizzle-orm/pg-core";
+import type { ConferenceInput } from "@fc/shared";
 
 export const conferences = pgTable(
   "conferences",
@@ -90,3 +92,33 @@ export const sessions = pgTable(
 );
 
 export type SessionRow = typeof sessions.$inferSelect;
+
+export const conferenceEdits = pgTable(
+  "conference_edits",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    conferenceId: uuid("conference_id")
+      .notNull()
+      .references(() => conferences.id, { onDelete: "cascade" }),
+    submitterUserId: uuid("submitter_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    proposed: jsonb("proposed").$type<ConferenceInput>().notNull(),
+    submissionNote: text("submission_note"),
+    moderationStatus: text("moderation_status").notNull().default("pending"),
+    rejectionReason: text("rejection_reason"),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    editsConferenceIdx: index("edits_conference_idx").on(t.conferenceId),
+    editsModerationIdx: index("edits_moderation_idx").on(t.moderationStatus),
+  }),
+);
+
+export type ConferenceEditRow = typeof conferenceEdits.$inferSelect;

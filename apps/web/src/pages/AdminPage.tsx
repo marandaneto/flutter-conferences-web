@@ -13,22 +13,27 @@ import {
   adminList,
   adminReject,
   adminUpdate,
+  approveEdit,
   createInvite,
+  deleteEdit,
   deleteInvite,
   deleteMember,
   getMe,
   getAdminToken,
   githubLoginUrl,
+  listEdits,
   listInvites,
   listMembers,
   logout as logoutApi,
+  rejectEdit,
   setAdminToken,
   type AuthMe,
+  type EditSuggestion,
 } from "../api";
 import { ConferenceForm } from "../components/ConferenceForm";
-import type { Conference } from "@fc/shared";
+import type { Conference, ConferenceInput } from "@fc/shared";
 
-type Tab = "pending" | "all" | "new" | "members";
+type Tab = "pending" | "all" | "new" | "edits" | "members";
 
 const AUTH_ERRORS: Record<string, string> = {
   github_token_exchange_failed: "GitHub sign-in failed during token exchange.",
@@ -224,6 +229,9 @@ function AdminApp({
           <TabButton active={tab === "new"} onClick={() => setTab("new")}>
             Add new
           </TabButton>
+          <TabButton active={tab === "edits"} onClick={() => setTab("edits")}>
+            Edits
+          </TabButton>
           <TabButton active={tab === "members"} onClick={() => setTab("members")}>
             Members
           </TabButton>
@@ -252,6 +260,7 @@ function AdminApp({
       {tab === "pending" && <PendingTab onUnauthorized={onUnauthorized} />}
       {tab === "all" && <AllTab onUnauthorized={onUnauthorized} />}
       {tab === "new" && <NewTab onUnauthorized={onUnauthorized} />}
+      {tab === "edits" && <EditsTab onUnauthorized={onUnauthorized} />}
       {tab === "members" && <MembersTab onUnauthorized={onUnauthorized} />}
     </div>
   );
@@ -664,4 +673,165 @@ function MembersTab({ onUnauthorized }: { onUnauthorized: (reason: string) => vo
       </section>
     </div>
   );
+}
+
+function EditsTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }) {
+  const qc = useQueryClient();
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["admin", "edits", "pending"],
+    queryFn: () => listEdits("pending"),
+    retry: false,
+  });
+  useUnauthorizedWatcher(error, onUnauthorized);
+
+  const approve = useMutation({
+    mutationFn: approveEdit,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin"] }),
+  });
+  const reject = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      rejectEdit(id, reason),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin"] }),
+  });
+  const remove = useMutation({
+    mutationFn: deleteEdit,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin"] }),
+  });
+
+  if (isLoading) return <p>Loading…</p>;
+  if (error) return <p className="text-rose-700">Failed to load: {String(error)}</p>;
+  if (!data || data.length === 0)
+    return <p className="text-slate-500">No pending edits.</p>;
+
+  return (
+    <ul className="space-y-4">
+      {data.map((edit) => (
+        <EditRow
+          key={edit.id}
+          edit={edit}
+          onApprove={() => approve.mutate(edit.id)}
+          onReject={(reason) => reject.mutate({ id: edit.id, reason })}
+          onDelete={() => remove.mutate(edit.id)}
+        />
+      ))}
+    </ul>
+  );
+}
+
+function EditRow({
+  edit,
+  onApprove,
+  onReject,
+  onDelete,
+}: {
+  edit: EditSuggestion;
+  onApprove: () => void;
+  onReject: (reason: string) => void;
+  onDelete: () => void;
+}) {
+  if (!edit.target) {
+    return (
+      <li className="border border-rose-200 rounded-md p-4 text-sm text-rose-700">
+        Edit references a deleted conference.
+        <button onClick={onDelete} className="ml-2 underline">
+          Delete edit
+        </button>
+      </li>
+    );
+  }
+
+  const diff = computeDiff(edit.target, edit.proposed);
+
+  return (
+    <li className="border border-slate-200 rounded-md p-4">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <div className="font-medium">{edit.target.name}</div>
+          {edit.submitter && (
+            <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
+              {edit.submitter.avatarUrl && (
+                <img src={edit.submitter.avatarUrl} className="w-4 h-4 rounded-full" alt="" />
+              )}
+              suggested by @{edit.submitter.githubLogin}
+            </div>
+          )}
+          {edit.submissionNote && (
+            <div className="mt-2 text-xs text-slate-600 bg-slate-50 rounded p-2 italic">
+              {edit.submissionNote}
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col gap-2 shrink-0">
+          <button onClick={onApprove} className="px-3 py-1 bg-emerald-700 text-white rounded text-sm">
+            Apply
+          </button>
+          <button
+            onClick={() => {
+              const reason = prompt("Rejection reason?");
+              if (reason) onReject(reason);
+            }}
+            className="px-3 py-1 bg-rose-700 text-white rounded text-sm"
+          >
+            Reject
+          </button>
+        </div>
+      </div>
+
+      {diff.length === 0 ? (
+        <p className="text-sm text-slate-500">No changes — already matches.</p>
+      ) : (
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="text-left text-xs text-slate-500">
+              <th className="py-1 pr-3">Field</th>
+              <th className="py-1 pr-3">Current</th>
+              <th className="py-1">Proposed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {diff.map((d) => (
+              <tr key={d.field} className="border-t border-slate-100 align-top">
+                <td className="py-1 pr-3 font-medium text-slate-700">{d.field}</td>
+                <td className="py-1 pr-3 text-slate-500 line-through">{d.before}</td>
+                <td className="py-1 text-emerald-800">{d.after}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </li>
+  );
+}
+
+type DiffRow = { field: string; before: string; after: string };
+
+function computeDiff(current: Conference, proposed: ConferenceInput): DiffRow[] {
+  const fmt = (v: unknown): string => {
+    if (v === null || v === undefined || v === "") return "—";
+    if (typeof v === "boolean") return v ? "yes" : "no";
+    return String(v);
+  };
+  const cfp = (
+    cfp: { start: string; end: string; site?: string | null } | null | undefined,
+  ) => (cfp ? `${cfp.start} → ${cfp.end}${cfp.site ? ` · ${cfp.site}` : ""}` : "—");
+
+  const fields: { field: string; before: string; after: string }[] = [
+    { field: "name", before: current.name, after: proposed.name },
+    { field: "website", before: current.website, after: proposed.website },
+    { field: "location", before: current.location, after: proposed.location },
+    {
+      field: "online",
+      before: fmt(current.online),
+      after: fmt(proposed.online),
+    },
+    {
+      field: "eventStatus",
+      before: fmt(current.eventStatus),
+      after: fmt(proposed.eventStatus),
+    },
+    { field: "dateStart", before: current.dateStart, after: proposed.dateStart },
+    { field: "dateEnd", before: current.dateEnd, after: proposed.dateEnd },
+    { field: "cfp", before: cfp(current.cfp), after: cfp(proposed.cfp) },
+  ];
+  return fields.filter((d) => d.before !== d.after);
 }

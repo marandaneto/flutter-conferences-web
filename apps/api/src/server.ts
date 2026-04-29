@@ -6,6 +6,7 @@ import { publicRoutes } from "./routes/public.js";
 import { submissionRoutes } from "./routes/submissions.js";
 import { adminRoutes } from "./routes/admin.js";
 import { authRoutes } from "./routes/auth.js";
+import { editRoutes } from "./routes/edits.js";
 
 const app = Fastify({
   logger: true,
@@ -27,6 +28,7 @@ app.get("/health", async () => ({ ok: true }));
 await app.register(authRoutes);
 await app.register(publicRoutes);
 await app.register(submissionRoutes);
+await app.register(editRoutes);
 await app.register(adminRoutes);
 
 try {
