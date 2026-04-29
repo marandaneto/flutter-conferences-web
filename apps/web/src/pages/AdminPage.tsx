@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import {
+  ApiError,
   adminApprove,
   adminCreate,
   adminDelete,
@@ -21,15 +22,35 @@ type Tab = "pending" | "all" | "new";
 
 export function AdminPage() {
   const [token, setToken] = useState(getAdminToken());
+  const [authError, setAuthError] = useState<string | null>(null);
 
   if (!token) {
-    return <TokenGate onSave={(t) => { setAdminToken(t); setToken(t); }} />;
+    return (
+      <TokenGate
+        error={authError}
+        onSave={(t) => { setAdminToken(t); setToken(t); setAuthError(null); }}
+      />
+    );
   }
 
-  return <AdminApp onLogout={() => { setAdminToken(null); setToken(null); }} />;
+  return (
+    <AdminApp
+      onLogout={(reason) => {
+        setAdminToken(null);
+        setToken(null);
+        if (reason) setAuthError(reason);
+      }}
+    />
+  );
 }
 
-function TokenGate({ onSave }: { onSave: (token: string) => void }) {
+function TokenGate({
+  onSave,
+  error,
+}: {
+  onSave: (token: string) => void;
+  error: string | null;
+}) {
   const [val, setVal] = useState("");
   return (
     <form
@@ -44,13 +65,17 @@ function TokenGate({ onSave }: { onSave: (token: string) => void }) {
         value={val}
         onChange={(e) => setVal(e.target.value)}
         placeholder="ADMIN_TOKEN"
+        autoFocus
       />
+      {error && (
+        <p className="text-sm text-rose-700">{error}</p>
+      )}
       <button className="px-4 py-2 bg-slate-900 text-white rounded-md">Continue</button>
     </form>
   );
 }
 
-function AdminApp({ onLogout }: { onLogout: () => void }) {
+function AdminApp({ onLogout }: { onLogout: (reason?: string) => void }) {
   const [tab, setTab] = useState<Tab>("pending");
   return (
     <div>
@@ -66,15 +91,26 @@ function AdminApp({ onLogout }: { onLogout: () => void }) {
             Add new
           </TabButton>
         </div>
-        <button onClick={onLogout} className="text-sm text-slate-500 underline">
+        <button onClick={() => onLogout()} className="text-sm text-slate-500 underline">
           Sign out
         </button>
       </div>
-      {tab === "pending" && <PendingTab />}
-      {tab === "all" && <AllTab />}
-      {tab === "new" && <NewTab />}
+      {tab === "pending" && <PendingTab onUnauthorized={onLogout} />}
+      {tab === "all" && <AllTab onUnauthorized={onLogout} />}
+      {tab === "new" && <NewTab onUnauthorized={onLogout} />}
     </div>
   );
+}
+
+function useUnauthorizedWatcher(
+  error: unknown,
+  onUnauthorized: (reason: string) => void,
+) {
+  useEffect(() => {
+    if (error instanceof ApiError && error.status === 401) {
+      onUnauthorized("Invalid admin token. Try again.");
+    }
+  }, [error, onUnauthorized]);
 }
 
 function TabButton({
@@ -98,12 +134,14 @@ function TabButton({
   );
 }
 
-function PendingTab() {
+function PendingTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }) {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["admin", "pending"],
     queryFn: () => adminList("pending"),
+    retry: false,
   });
+  useUnauthorizedWatcher(error, onUnauthorized);
 
   const approve = useMutation({
     mutationFn: adminApprove,
@@ -125,6 +163,7 @@ function PendingTab() {
   });
 
   if (isLoading) return <p>Loading…</p>;
+  if (error) return <p className="text-rose-700">Failed to load: {String(error)}</p>;
   if (!data || data.length === 0)
     return <p className="text-slate-500">No pending submissions.</p>;
 
@@ -231,12 +270,14 @@ function PendingRow({
   );
 }
 
-function AllTab() {
+function AllTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }) {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["admin", "all"],
     queryFn: () => adminList(),
+    retry: false,
   });
+  useUnauthorizedWatcher(error, onUnauthorized);
   const remove = useMutation({
     mutationFn: adminDelete,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin"] }),
@@ -252,6 +293,7 @@ function AllTab() {
   });
 
   if (isLoading) return <p>Loading…</p>;
+  if (error) return <p className="text-rose-700">Failed to load: {String(error)}</p>;
   if (!data) return null;
 
   return (
@@ -303,11 +345,16 @@ function AllTab() {
   );
 }
 
-function NewTab() {
+function NewTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }) {
   const qc = useQueryClient();
   const create = useMutation({
     mutationFn: adminCreate,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin"] }),
+    onError: (err) => {
+      if (err instanceof ApiError && err.status === 401) {
+        onUnauthorized("Invalid admin token. Try again.");
+      }
+    },
   });
   const [done, setDone] = useState(false);
 

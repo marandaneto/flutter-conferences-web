@@ -7,10 +7,16 @@ function url(path: string): string {
   return `${API_BASE}${path}`;
 }
 
+export class ApiError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
 async function check<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`${res.status} ${body}`);
+    throw new ApiError(res.status, `${res.status} ${body}`);
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
