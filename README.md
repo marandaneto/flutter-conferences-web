@@ -74,6 +74,14 @@ pnpm dev             # api on :3000, web on :5173
 
 GitHub OAuth and Resend are optional locally — if their env vars are absent, sign-in is disabled and emails are silently skipped. The `ADMIN_TOKEN` from `.env` still works for the admin panel.
 
+### Pre-commit hooks
+
+`pnpm install` runs husky's `prepare` script which sets up a pre-commit hook that runs `lint-staged` (eslint --fix + prettier --write on staged files) and `pnpm typecheck` across all workspaces. If your pnpm is configured with `ignore-scripts=true`, bootstrap the hook once manually:
+
+```sh
+pnpm husky
+```
+
 ## Deployment notes
 
 Both Railway services use config-as-code (`apps/{api,web}/railway.json`):
