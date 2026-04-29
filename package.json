@@ -1,0 +1,18 @@
+{
+  "name": "flutter-conferences",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "build": "pnpm -r run build",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "pnpm --filter @fc/api run db:migrate",
+    "db:seed": "pnpm --filter @fc/api run db:seed",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20"
+  }
+}

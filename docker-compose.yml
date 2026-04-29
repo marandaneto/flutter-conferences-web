@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fc-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fc
+      POSTGRES_PASSWORD: fc
+      POSTGRES_DB: fc
+    ports:
+      - "5433:5432"
+    volumes:
+      - fc-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fc"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  fc-pgdata:
