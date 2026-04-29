@@ -32,8 +32,8 @@ function publicUser(u: UserRow) {
 function oauthConfigured(): boolean {
   return Boolean(
     env.GITHUB_CLIENT_ID &&
-      env.GITHUB_CLIENT_SECRET &&
-      env.GITHUB_OAUTH_CALLBACK_URL,
+    env.GITHUB_CLIENT_SECRET &&
+    env.GITHUB_OAUTH_CALLBACK_URL,
   );
 }
 
@@ -62,7 +62,8 @@ export async function authRoutes(app: FastifyInstance) {
     if (!oauthConfigured()) {
       return reply.code(503).send({ error: "github oauth not configured" });
     }
-    const returnTo = (req.query as { return_to?: string }).return_to ?? "/admin";
+    const returnTo =
+      (req.query as { return_to?: string }).return_to ?? "/admin";
     const state = signOAuthState(returnTo);
     const url = new URL(GITHUB_AUTHORIZE);
     url.searchParams.set("client_id", env.GITHUB_CLIENT_ID!);
@@ -87,7 +88,10 @@ export async function authRoutes(app: FastifyInstance) {
 
     const tokenRes = await fetch(GITHUB_TOKEN, {
       method: "POST",
-      headers: { "content-type": "application/json", accept: "application/json" },
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json",
+      },
       body: JSON.stringify({
         client_id: env.GITHUB_CLIENT_ID,
         client_secret: env.GITHUB_CLIENT_SECRET,
@@ -97,7 +101,10 @@ export async function authRoutes(app: FastifyInstance) {
     });
     if (!tokenRes.ok) {
       const txt = await tokenRes.text();
-      app.log.error({ status: tokenRes.status, body: txt }, "github token exchange failed");
+      app.log.error(
+        { status: tokenRes.status, body: txt },
+        "github token exchange failed",
+      );
       return redirectWithError(reply, returnTo, "github_token_exchange_failed");
     }
     const tokenJson = (await tokenRes.json()) as {
@@ -106,7 +113,11 @@ export async function authRoutes(app: FastifyInstance) {
     };
     if (!tokenJson.access_token) {
       app.log.error({ tokenJson }, "github token missing");
-      return redirectWithError(reply, returnTo, tokenJson.error ?? "github_no_token");
+      return redirectWithError(
+        reply,
+        returnTo,
+        tokenJson.error ?? "github_no_token",
+      );
     }
 
     const userRes = await fetch(GITHUB_USER, {

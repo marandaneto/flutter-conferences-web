@@ -31,7 +31,10 @@ export function Layout() {
         <Outlet />
       </main>
       <footer className="mt-12 text-sm text-slate-500">
-        <a className="underline" href={`${import.meta.env.VITE_API_URL ?? ""}/conferences.ics`}>
+        <a
+          className="underline"
+          href={`${import.meta.env.VITE_API_URL ?? ""}/conferences.ics`}
+        >
           iCalendar
         </a>{" "}
         ·{" "}

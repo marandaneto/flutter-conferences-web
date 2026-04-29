@@ -2,12 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { ConferenceForm } from "../components/ConferenceForm";
-import {
-  getMe,
-  githubLoginUrl,
-  submitConference,
-  type AuthMe,
-} from "../api";
+import { getMe, githubLoginUrl, submitConference, type AuthMe } from "../api";
 
 const AUTH_ERRORS: Record<string, string> = {
   github_token_exchange_failed: "GitHub sign-in failed during token exchange.",

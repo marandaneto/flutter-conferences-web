@@ -30,7 +30,10 @@ export async function sendEmail(
     });
     if (!res.ok) {
       const body = await res.text();
-      log.error({ status: res.status, body, to: args.to }, "resend send failed");
+      log.error(
+        { status: res.status, body, to: args.to },
+        "resend send failed",
+      );
     }
   } catch (err) {
     log.error({ err, to: args.to }, "resend send threw");

@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { and, asc, desc, eq, isNull, inArray } from "drizzle-orm";
+import { asc, desc, eq, isNull, inArray } from "drizzle-orm";
 import { z } from "zod";
 import {
   conferenceInputSchema,
@@ -291,7 +291,9 @@ export async function adminRoutes(app: FastifyInstance) {
 
     const conferenceIds = [...new Set(rows.map((r) => r.conferenceId))];
     const submitterIds = [
-      ...new Set(rows.map((r) => r.submitterUserId).filter(Boolean) as string[]),
+      ...new Set(
+        rows.map((r) => r.submitterUserId).filter(Boolean) as string[],
+      ),
     ];
     const targets = conferenceIds.length
       ? await db

@@ -6,7 +6,9 @@ const envSchema = z.object({
   ADMIN_TOKEN: z.string().min(8),
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
   PORT: z.coerce.number().default(3000),
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
   GITHUB_CLIENT_ID: z.string().min(1).optional(),
   GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
   GITHUB_OAUTH_CALLBACK_URL: z.string().url().optional(),
@@ -14,7 +16,9 @@ const envSchema = z.object({
   SESSION_SECRET: z.string().min(16).optional(),
   RESEND_API_KEY: z.string().min(1).optional(),
   NOTIFICATION_EMAIL: z.string().email().optional(),
-  NOTIFICATION_FROM: z.string().default("Flutter Conferences <onboarding@resend.dev>"),
+  NOTIFICATION_FROM: z
+    .string()
+    .default("Flutter Conferences <onboarding@resend.dev>"),
 });
 
 export const env = envSchema.parse(process.env);

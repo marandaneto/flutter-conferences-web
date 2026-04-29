@@ -2,6 +2,7 @@
   "name": "flutter-conferences",
   "private": true,
   "version": "0.0.0",
+  "type": "module",
   "scripts": {
     "dev": "pnpm -r --parallel run dev",
     "build": "pnpm -r run build",
@@ -9,10 +10,21 @@
     "db:down": "docker compose down",
     "db:migrate": "pnpm --filter @fc/api run db:migrate",
     "db:seed": "pnpm --filter @fc/api run db:seed",
-    "typecheck": "pnpm -r run typecheck"
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "packageManager": "pnpm@10.33.0",
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.16.0",
+    "eslint": "^9.16.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "globals": "^15.13.0",
+    "prettier": "^3.4.2",
+    "typescript-eslint": "^8.17.0"
   }
 }

@@ -83,8 +83,8 @@ export function SuggestEditPage() {
       <div>
         <h2 className="text-lg font-semibold">Suggest edit: {c.name}</h2>
         <p className="text-sm text-slate-600">
-          Make your changes and submit. The current admin will review and
-          either apply or decline the edit.
+          Make your changes and submit. The current admin will review and either
+          apply or decline the edit.
         </p>
       </div>
       <ConferenceForm

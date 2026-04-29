@@ -8,11 +8,7 @@ import {
   dateAtMidnight,
 } from "@fc/shared";
 import { getMe, type AuthMe } from "../api";
-import {
-  googleCalendarUrl,
-  icsDataUrl,
-  icsFilename,
-} from "../lib/calendar";
+import { googleCalendarUrl, icsDataUrl, icsFilename } from "../lib/calendar";
 
 const badge = "inline-block ml-2 px-2 py-0.5 text-xs rounded";
 

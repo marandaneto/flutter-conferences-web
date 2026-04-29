@@ -5,8 +5,9 @@ import { sql } from "drizzle-orm";
 import { db } from "./client.js";
 import { conferences } from "./schema.js";
 
-const SOURCE_DIR = process.env.SEED_SOURCE_DIR
-  ?? join(process.cwd(), "..", "..", "..", "flutter-conferences", "_conferences");
+const SOURCE_DIR =
+  process.env.SEED_SOURCE_DIR ??
+  join(process.cwd(), "..", "..", "..", "flutter-conferences", "_conferences");
 
 function toIsoDate(value: unknown): string {
   if (value instanceof Date) return value.toISOString().slice(0, 10);

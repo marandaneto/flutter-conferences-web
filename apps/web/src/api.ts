@@ -49,7 +49,10 @@ export type EditSuggestion = {
 };
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
     super(message);
   }
 }
@@ -169,7 +172,9 @@ export function adminUpdate(id: string, input: Partial<ConferenceInput>) {
 }
 
 export function adminApprove(id: string) {
-  return api<Conference>(`/api/admin/conferences/${id}/approve`, { method: "POST" });
+  return api<Conference>(`/api/admin/conferences/${id}/approve`, {
+    method: "POST",
+  });
 }
 
 export function adminReject(id: string, reason: string) {

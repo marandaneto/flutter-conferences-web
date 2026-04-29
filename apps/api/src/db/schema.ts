@@ -60,8 +60,12 @@ export const users = pgTable("users", {
   name: text("name"),
   avatarUrl: text("avatar_url"),
   isAdmin: boolean("is_admin").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export type UserRow = typeof users.$inferSelect;
@@ -69,8 +73,12 @@ export type UserRow = typeof users.$inferSelect;
 export const invites = pgTable("invites", {
   id: uuid("id").primaryKey().defaultRandom(),
   githubLogin: text("github_login").notNull().unique(),
-  invitedBy: uuid("invited_by").references(() => users.id, { onDelete: "set null" }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  invitedBy: uuid("invited_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
   acceptedAt: timestamp("accepted_at", { withTimezone: true }),
 });
 
@@ -84,7 +92,9 @@ export const sessions = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => ({
     sessionsUserIdx: index("sessions_user_idx").on(t.userId),

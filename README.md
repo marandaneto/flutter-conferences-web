@@ -27,17 +27,20 @@ packages/
 ## Features
 
 **Public**
+
 - Upcoming and Past pages with search + online-only / year filters
 - ICS calendar feed at `/conferences.ics` for subscriptions
 - Per-event "Add to Google Calendar" link and `.ics` download
 - "Suggest edit" link on each conference (signed-in users)
 
 **Submitter (any GitHub account)**
+
 - `/suggest` — propose a new conference (auth-gated, rate-limited, duplicate-detected)
 - `/suggest-edit/:slug` — propose changes to a listed conference
 - Email on approve/reject
 
 **Admin (invited GitHub users + break-glass token)**
+
 - Pending queue (edit-and-approve flow)
 - All-conferences table with inline edit/delete
 - Edits queue with field-by-field diff and apply/reject controls
@@ -74,10 +77,12 @@ GitHub OAuth and Resend are optional locally — if their env vars are absent, s
 ## Deployment notes
 
 Both Railway services use config-as-code (`apps/{api,web}/railway.json`):
+
 - `@fc/api` runs `pnpm db:migrate && pnpm start` on each deploy. Listens on `$PORT`.
 - `@fc/web` builds with Vite (`pnpm build`) and serves `dist/` via `sirv-cli`.
 
 Required env vars on `@fc/api`:
+
 - `DATABASE_URL` — referenced from the Postgres plugin
 - `ADMIN_TOKEN` — long random secret
 - `CORS_ORIGIN` — comma-separated allowed origins (e.g. `https://www.flutterconferences.com,https://flutterconferences.com`)
@@ -88,6 +93,7 @@ Required env vars on `@fc/api`:
 - `NOTIFICATION_FROM` (optional) — sender override; defaults to Resend's `onboarding@resend.dev`
 
 Required env vars on `@fc/web`:
+
 - `VITE_API_URL` — full API origin, baked in at build time
 
 ## Migrations

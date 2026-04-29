@@ -76,7 +76,11 @@ export function ConferenceForm({
 
     const parsed = conferenceInputSchema.safeParse(candidate);
     if (!parsed.success) {
-      setError(parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "));
+      setError(
+        parsed.error.issues
+          .map((i) => `${i.path.join(".")}: ${i.message}`)
+          .join("; "),
+      );
       return;
     }
 
@@ -96,7 +100,12 @@ export function ConferenceForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className={labelClass}>Name</label>
-        <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} required />
+        <input
+          className={inputClass}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
       </div>
       <div>
         <label className={labelClass}>Website</label>
@@ -112,28 +121,58 @@ export function ConferenceForm({
       </div>
       <div>
         <label className={labelClass}>Location</label>
-        <input className={inputClass} value={location} onChange={(e) => setLocation(e.target.value)} required />
+        <input
+          className={inputClass}
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          required
+        />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className={labelClass}>Start date</label>
-          <input className={inputClass} type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} required />
+          <input
+            className={inputClass}
+            type="date"
+            value={dateStart}
+            onChange={(e) => setDateStart(e.target.value)}
+            required
+          />
         </div>
         <div>
           <label className={labelClass}>End date</label>
-          <input className={inputClass} type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} required />
+          <input
+            className={inputClass}
+            type="date"
+            value={dateEnd}
+            onChange={(e) => setDateEnd(e.target.value)}
+            required
+          />
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <input id="online" type="checkbox" checked={online} onChange={(e) => setOnline(e.target.checked)} />
-        <label htmlFor="online" className="text-sm">Online-only event</label>
+        <input
+          id="online"
+          type="checkbox"
+          checked={online}
+          onChange={(e) => setOnline(e.target.checked)}
+        />
+        <label htmlFor="online" className="text-sm">
+          Online-only event
+        </label>
       </div>
       <div>
         <label className={labelClass}>Event status (optional)</label>
-        <select className={inputClass} value={eventStatus} onChange={(e) => setEventStatus(e.target.value)}>
+        <select
+          className={inputClass}
+          value={eventStatus}
+          onChange={(e) => setEventStatus(e.target.value)}
+        >
           <option value="">—</option>
           {EVENT_STATUSES.map((s) => (
-            <option key={s} value={s}>{s}</option>
+            <option key={s} value={s}>
+              {s}
+            </option>
           ))}
         </select>
       </div>
@@ -141,7 +180,11 @@ export function ConferenceForm({
       <fieldset className="border border-slate-200 rounded-md p-3">
         <legend className="text-sm px-1">
           <label className="flex items-center gap-2">
-            <input type="checkbox" checked={hasCfp} onChange={(e) => setHasCfp(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={hasCfp}
+              onChange={(e) => setHasCfp(e.target.checked)}
+            />
             Has Call For Papers
           </label>
         </legend>
@@ -150,11 +193,23 @@ export function ConferenceForm({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={labelClass}>CFP start</label>
-                <input className={inputClass} type="date" value={cfpStart} onChange={(e) => setCfpStart(e.target.value)} required />
+                <input
+                  className={inputClass}
+                  type="date"
+                  value={cfpStart}
+                  onChange={(e) => setCfpStart(e.target.value)}
+                  required
+                />
               </div>
               <div>
                 <label className={labelClass}>CFP end</label>
-                <input className={inputClass} type="date" value={cfpEnd} onChange={(e) => setCfpEnd(e.target.value)} required />
+                <input
+                  className={inputClass}
+                  type="date"
+                  value={cfpEnd}
+                  onChange={(e) => setCfpEnd(e.target.value)}
+                  required
+                />
               </div>
             </div>
             <div>

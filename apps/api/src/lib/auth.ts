@@ -19,7 +19,9 @@ function newSessionId(): string {
 
 export async function createSessionForUser(userId: string): Promise<string> {
   const id = newSessionId();
-  const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(
+    Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000,
+  );
   await db.insert(sessions).values({ id, userId, expiresAt });
   return id;
 }
@@ -28,9 +30,7 @@ export async function destroySession(id: string): Promise<void> {
   await db.delete(sessions).where(eq(sessions.id, id));
 }
 
-async function lookupSessionUser(
-  sessionId: string,
-): Promise<UserRow | null> {
+async function lookupSessionUser(sessionId: string): Promise<UserRow | null> {
   const row = await db.query.sessions.findFirst({
     where: and(eq(sessions.id, sessionId), gt(sessions.expiresAt, new Date())),
   });

@@ -64,8 +64,7 @@ export async function submissionRoutes(app: FastifyInstance) {
           cfpStart: data.cfp?.start ?? null,
           cfpEnd: data.cfp?.end ?? null,
           cfpSite: data.cfp?.site ?? null,
-          submitterName:
-            submitter.name ?? `@${submitter.githubLogin}`,
+          submitterName: submitter.name ?? `@${submitter.githubLogin}`,
           submitterEmail: submitter.email,
           submissionNote: data.submissionNote ?? null,
           moderationStatus: "pending",

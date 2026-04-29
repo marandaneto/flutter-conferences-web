@@ -1,9 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import {
   ApiError,
@@ -81,7 +77,8 @@ export function AdminPage() {
     return (
       <SignInPanel
         prefilledError={
-          tokenError ?? (authError ? AUTH_ERRORS[authError] ?? authError : null)
+          tokenError ??
+          (authError ? (AUTH_ERRORS[authError] ?? authError) : null)
         }
         onTokenSubmit={(t) => {
           setAdminToken(t);
@@ -99,9 +96,12 @@ export function AdminPage() {
         <p className="text-sm text-slate-600">
           You're signed in
           {me?.authenticated && me.kind === "user" && (
-            <> as <span className="font-medium">@{me.user.githubLogin}</span></>
-          )}
-          {" "}but don't have admin access. Ask an admin to invite you.
+            <>
+              {" "}
+              as <span className="font-medium">@{me.user.githubLogin}</span>
+            </>
+          )}{" "}
+          but don't have admin access. Ask an admin to invite you.
         </p>
         <button
           className="text-sm underline text-slate-600"
@@ -206,7 +206,10 @@ function AdminApp({
     <div>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex gap-1 flex-wrap">
-          <TabButton active={tab === "pending"} onClick={() => setTab("pending")}>
+          <TabButton
+            active={tab === "pending"}
+            onClick={() => setTab("pending")}
+          >
             Pending
           </TabButton>
           <TabButton active={tab === "all"} onClick={() => setTab("all")}>
@@ -218,7 +221,10 @@ function AdminApp({
           <TabButton active={tab === "edits"} onClick={() => setTab("edits")}>
             Edits
           </TabButton>
-          <TabButton active={tab === "members"} onClick={() => setTab("members")}>
+          <TabButton
+            active={tab === "members"}
+            onClick={() => setTab("members")}
+          >
             Members
           </TabButton>
         </div>
@@ -289,7 +295,11 @@ function useUnauthorizedWatcher(
   }, [error, onUnauthorized]);
 }
 
-function PendingTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }) {
+function PendingTab({
+  onUnauthorized,
+}: {
+  onUnauthorized: (reason: string) => void;
+}) {
   const qc = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin", "pending"],
@@ -318,7 +328,8 @@ function PendingTab({ onUnauthorized }: { onUnauthorized: (reason: string) => vo
   });
 
   if (isLoading) return <p>Loading…</p>;
-  if (error) return <p className="text-rose-700">Failed to load: {String(error)}</p>;
+  if (error)
+    return <p className="text-rose-700">Failed to load: {String(error)}</p>;
   if (!data || data.length === 0)
     return <p className="text-slate-500">No pending submissions.</p>;
 
@@ -363,7 +374,12 @@ function PendingRow({
             {c.online && " · Online"}
           </div>
           <div className="text-sm">
-            <a className="text-sky-700 underline" href={c.website} target="_blank" rel="noreferrer">
+            <a
+              className="text-sky-700 underline"
+              href={c.website}
+              target="_blank"
+              rel="noreferrer"
+            >
               {c.website}
             </a>
           </div>
@@ -371,17 +387,25 @@ function PendingRow({
             <div className="mt-2 text-xs text-slate-600 bg-slate-50 rounded p-2">
               {c.submitterName && <div>By {c.submitterName}</div>}
               {c.submitterEmail && <div>{c.submitterEmail}</div>}
-              {c.submissionNote && <div className="mt-1 italic">{c.submissionNote}</div>}
+              {c.submissionNote && (
+                <div className="mt-1 italic">{c.submissionNote}</div>
+              )}
             </div>
           )}
         </div>
         <div className="flex flex-col gap-2 shrink-0">
           {!editing && (
             <>
-              <button onClick={onApprove} className="px-3 py-1 bg-emerald-700 text-white rounded text-sm">
+              <button
+                onClick={onApprove}
+                className="px-3 py-1 bg-emerald-700 text-white rounded text-sm"
+              >
                 Approve
               </button>
-              <button onClick={() => setEditing(true)} className="px-3 py-1 bg-slate-200 rounded text-sm">
+              <button
+                onClick={() => setEditing(true)}
+                className="px-3 py-1 bg-slate-200 rounded text-sm"
+              >
                 Edit
               </button>
               <button
@@ -395,7 +419,8 @@ function PendingRow({
               </button>
               <button
                 onClick={() => {
-                  if (confirm("Delete this submission permanently?")) onDelete();
+                  if (confirm("Delete this submission permanently?"))
+                    onDelete();
                 }}
                 className="px-3 py-1 text-rose-700 underline text-sm"
               >
@@ -416,7 +441,10 @@ function PendingRow({
               setEditing(false);
             }}
           />
-          <button onClick={() => setEditing(false)} className="mt-2 text-sm underline">
+          <button
+            onClick={() => setEditing(false)}
+            className="mt-2 text-sm underline"
+          >
             Cancel
           </button>
         </div>
@@ -425,7 +453,11 @@ function PendingRow({
   );
 }
 
-function AllTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }) {
+function AllTab({
+  onUnauthorized,
+}: {
+  onUnauthorized: (reason: string) => void;
+}) {
   const qc = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin", "all"],
@@ -448,7 +480,8 @@ function AllTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }
   });
 
   if (isLoading) return <p>Loading…</p>;
-  if (error) return <p className="text-rose-700">Failed to load: {String(error)}</p>;
+  if (error)
+    return <p className="text-rose-700">Failed to load: {String(error)}</p>;
   if (!data) return null;
 
   return (
@@ -459,11 +492,15 @@ function AllTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }
             <div>
               <div className="font-medium">
                 {c.name}{" "}
-                <span className={`text-xs px-2 py-0.5 rounded ${
-                  c.moderationStatus === "approved" ? "bg-emerald-100 text-emerald-800"
-                    : c.moderationStatus === "pending" ? "bg-amber-100 text-amber-800"
-                    : "bg-rose-100 text-rose-800"
-                }`}>
+                <span
+                  className={`text-xs px-2 py-0.5 rounded ${
+                    c.moderationStatus === "approved"
+                      ? "bg-emerald-100 text-emerald-800"
+                      : c.moderationStatus === "pending"
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-rose-100 text-rose-800"
+                  }`}
+                >
                   {c.moderationStatus}
                 </span>
               </div>
@@ -472,11 +509,16 @@ function AllTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }
               </div>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setEditing(editing === c.id ? null : c.id)} className="px-3 py-1 bg-slate-200 rounded text-sm">
+              <button
+                onClick={() => setEditing(editing === c.id ? null : c.id)}
+                className="px-3 py-1 bg-slate-200 rounded text-sm"
+              >
                 {editing === c.id ? "Close" : "Edit"}
               </button>
               <button
-                onClick={() => { if (confirm(`Delete "${c.name}"?`)) remove.mutate(c.id); }}
+                onClick={() => {
+                  if (confirm(`Delete "${c.name}"?`)) remove.mutate(c.id);
+                }}
                 className="px-3 py-1 text-rose-700 underline text-sm"
               >
                 Delete
@@ -500,7 +542,11 @@ function AllTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }
   );
 }
 
-function NewTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }) {
+function NewTab({
+  onUnauthorized,
+}: {
+  onUnauthorized: (reason: string) => void;
+}) {
   const qc = useQueryClient();
   const [done, setDone] = useState(false);
   const [duplicate, setDuplicate] = useState<{
@@ -589,7 +635,11 @@ function NewTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }
   );
 }
 
-function MembersTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }) {
+function MembersTab({
+  onUnauthorized,
+}: {
+  onUnauthorized: (reason: string) => void;
+}) {
   const qc = useQueryClient();
   const members = useQuery({
     queryKey: ["admin", "members"],
@@ -632,7 +682,9 @@ function MembersTab({ onUnauthorized }: { onUnauthorized: (reason: string) => vo
 
   if (members.isLoading || invitesQ.isLoading) return <p>Loading…</p>;
   if (members.error)
-    return <p className="text-rose-700">Failed to load: {String(members.error)}</p>;
+    return (
+      <p className="text-rose-700">Failed to load: {String(members.error)}</p>
+    );
 
   return (
     <div className="space-y-6">
@@ -654,7 +706,9 @@ function MembersTab({ onUnauthorized }: { onUnauthorized: (reason: string) => vo
             Invite
           </button>
         </form>
-        {inviteError && <p className="text-sm text-rose-700 mt-1">{inviteError}</p>}
+        {inviteError && (
+          <p className="text-sm text-rose-700 mt-1">{inviteError}</p>
+        )}
       </section>
 
       <section>
@@ -664,7 +718,10 @@ function MembersTab({ onUnauthorized }: { onUnauthorized: (reason: string) => vo
         ) : (
           <ul className="divide-y divide-slate-200 border border-slate-200 rounded-md">
             {invitesQ.data.map((i) => (
-              <li key={i.id} className="px-3 py-2 flex items-center justify-between">
+              <li
+                key={i.id}
+                className="px-3 py-2 flex items-center justify-between"
+              >
                 <span>
                   <span className="font-medium">@{i.githubLogin}</span>
                   <span className="text-xs text-slate-500 ml-2">
@@ -690,17 +747,27 @@ function MembersTab({ onUnauthorized }: { onUnauthorized: (reason: string) => vo
         ) : (
           <ul className="divide-y divide-slate-200 border border-slate-200 rounded-md">
             {members.data.map((m) => (
-              <li key={m.id} className="px-3 py-2 flex items-center justify-between">
+              <li
+                key={m.id}
+                className="px-3 py-2 flex items-center justify-between"
+              >
                 <span className="flex items-center gap-2">
                   {m.avatarUrl && (
-                    <img src={m.avatarUrl} alt="" className="w-6 h-6 rounded-full" />
+                    <img
+                      src={m.avatarUrl}
+                      alt=""
+                      className="w-6 h-6 rounded-full"
+                    />
                   )}
                   <span className="font-medium">@{m.githubLogin}</span>
-                  {m.name && <span className="text-sm text-slate-500">({m.name})</span>}
+                  {m.name && (
+                    <span className="text-sm text-slate-500">({m.name})</span>
+                  )}
                 </span>
                 <button
                   onClick={() => {
-                    if (confirm(`Remove @${m.githubLogin}?`)) removeMember.mutate(m.id);
+                    if (confirm(`Remove @${m.githubLogin}?`))
+                      removeMember.mutate(m.id);
                   }}
                   className="text-sm text-rose-700 underline"
                 >
@@ -715,7 +782,11 @@ function MembersTab({ onUnauthorized }: { onUnauthorized: (reason: string) => vo
   );
 }
 
-function EditsTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }) {
+function EditsTab({
+  onUnauthorized,
+}: {
+  onUnauthorized: (reason: string) => void;
+}) {
   const qc = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin", "edits", "pending"],
@@ -739,7 +810,8 @@ function EditsTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void
   });
 
   if (isLoading) return <p>Loading…</p>;
-  if (error) return <p className="text-rose-700">Failed to load: {String(error)}</p>;
+  if (error)
+    return <p className="text-rose-700">Failed to load: {String(error)}</p>;
   if (!data || data.length === 0)
     return <p className="text-slate-500">No pending edits.</p>;
 
@@ -790,7 +862,11 @@ function EditRow({
           {edit.submitter && (
             <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
               {edit.submitter.avatarUrl && (
-                <img src={edit.submitter.avatarUrl} className="w-4 h-4 rounded-full" alt="" />
+                <img
+                  src={edit.submitter.avatarUrl}
+                  className="w-4 h-4 rounded-full"
+                  alt=""
+                />
               )}
               suggested by @{edit.submitter.githubLogin}
             </div>
@@ -802,7 +878,10 @@ function EditRow({
           )}
         </div>
         <div className="flex flex-col gap-2 shrink-0">
-          <button onClick={onApprove} className="px-3 py-1 bg-emerald-700 text-white rounded text-sm">
+          <button
+            onClick={onApprove}
+            className="px-3 py-1 bg-emerald-700 text-white rounded text-sm"
+          >
             Apply
           </button>
           <button
@@ -831,8 +910,12 @@ function EditRow({
           <tbody>
             {diff.map((d) => (
               <tr key={d.field} className="border-t border-slate-100 align-top">
-                <td className="py-1 pr-3 font-medium text-slate-700">{d.field}</td>
-                <td className="py-1 pr-3 text-slate-500 line-through">{d.before}</td>
+                <td className="py-1 pr-3 font-medium text-slate-700">
+                  {d.field}
+                </td>
+                <td className="py-1 pr-3 text-slate-500 line-through">
+                  {d.before}
+                </td>
                 <td className="py-1 text-emerald-800">{d.after}</td>
               </tr>
             ))}
@@ -845,15 +928,22 @@ function EditRow({
 
 type DiffRow = { field: string; before: string; after: string };
 
-function computeDiff(current: Conference, proposed: ConferenceInput): DiffRow[] {
+function computeDiff(
+  current: Conference,
+  proposed: ConferenceInput,
+): DiffRow[] {
   const fmt = (v: unknown): string => {
     if (v === null || v === undefined || v === "") return "—";
     if (typeof v === "boolean") return v ? "yes" : "no";
     return String(v);
   };
   const cfp = (
-    cfp: { start: string; end: string; site?: string | null } | null | undefined,
-  ) => (cfp ? `${cfp.start} → ${cfp.end}${cfp.site ? ` · ${cfp.site}` : ""}` : "—");
+    cfp:
+      | { start: string; end: string; site?: string | null }
+      | null
+      | undefined,
+  ) =>
+    cfp ? `${cfp.start} → ${cfp.end}${cfp.site ? ` · ${cfp.site}` : ""}` : "—";
 
   const fields: { field: string; before: string; after: string }[] = [
     { field: "name", before: current.name, after: proposed.name },
@@ -869,7 +959,11 @@ function computeDiff(current: Conference, proposed: ConferenceInput): DiffRow[] 
       before: fmt(current.eventStatus),
       after: fmt(proposed.eventStatus),
     },
-    { field: "dateStart", before: current.dateStart, after: proposed.dateStart },
+    {
+      field: "dateStart",
+      before: current.dateStart,
+      after: proposed.dateStart,
+    },
     { field: "dateEnd", before: current.dateEnd, after: proposed.dateEnd },
     { field: "cfp", before: cfp(current.cfp), after: cfp(proposed.cfp) },
   ];

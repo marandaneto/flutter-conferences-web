@@ -5,7 +5,9 @@ export function makeSlug(name: string, dateStart: string): string {
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  const month = new Date(dateStart).toLocaleString("en-US", { month: "long" }).toLowerCase();
+  const month = new Date(dateStart)
+    .toLocaleString("en-US", { month: "long" })
+    .toLowerCase();
   const year = dateStart.slice(0, 4);
   return `${base}-${month}-${year}`.replace(/-+/g, "-");
 }

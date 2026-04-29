@@ -6,9 +6,7 @@ export const MODERATION_STATUSES = ["pending", "approved", "rejected"] as const;
 export type EventStatus = (typeof EVENT_STATUSES)[number];
 export type ModerationStatus = (typeof MODERATION_STATUSES)[number];
 
-const isoDate = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "must be YYYY-MM-DD");
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "must be YYYY-MM-DD");
 
 const httpUrl = z
   .string()
@@ -105,9 +103,7 @@ export function isHappeningNow(
   return t >= dateAtMidnight(c.dateStart) && t <= dateAtMidnight(c.dateEnd);
 }
 
-export function cfpIsOpen(
-  c: Pick<Conference, "cfp">,
-): boolean {
+export function cfpIsOpen(c: Pick<Conference, "cfp">): boolean {
   if (!c.cfp) return false;
   const t = todayMidnight();
   return t >= dateAtMidnight(c.cfp.start) && t <= dateAtMidnight(c.cfp.end);
