@@ -33,20 +33,41 @@ export class ApiError extends Error {
   }
 }
 
+// "auth" stores either an admin token (break-glass) or a server-issued session id.
+// Both are sent as Authorization: Bearer; the server distinguishes them.
+const AUTH_KEY = "fc:auth";
+
+export function getAuthToken(): string | null {
+  return localStorage.getItem(AUTH_KEY);
+}
+
+export function setAuthToken(token: string | null) {
+  if (token) localStorage.setItem(AUTH_KEY, token);
+  else localStorage.removeItem(AUTH_KEY);
+}
+
+// Back-compat aliases (the existing `fc:admin-token` key is migrated on read).
 export function getAdminToken(): string | null {
-  return localStorage.getItem("fc:admin-token");
+  const v = getAuthToken();
+  if (v) return v;
+  const legacy = localStorage.getItem("fc:admin-token");
+  if (legacy) {
+    setAuthToken(legacy);
+    localStorage.removeItem("fc:admin-token");
+    return legacy;
+  }
+  return null;
 }
 
 export function setAdminToken(token: string | null) {
-  if (token) localStorage.setItem("fc:admin-token", token);
-  else localStorage.removeItem("fc:admin-token");
+  setAuthToken(token);
 }
 
 type ApiInit = RequestInit & { json?: unknown };
 
 async function api<T>(path: string, init: ApiInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
-  const token = getAdminToken();
+  const token = getAuthToken();
   if (token) headers.set("authorization", `Bearer ${token}`);
   if (init.json !== undefined) {
     headers.set("content-type", "application/json");
@@ -55,7 +76,6 @@ async function api<T>(path: string, init: ApiInit = {}): Promise<T> {
   const res = await fetch(url(path), {
     ...init,
     headers,
-    credentials: "include",
   });
   if (!res.ok) {
     const body = await res.text();

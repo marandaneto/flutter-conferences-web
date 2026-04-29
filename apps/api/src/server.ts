@@ -1,6 +1,5 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
-import cookie from "@fastify/cookie";
 import rateLimit from "@fastify/rate-limit";
 import { env } from "./env.js";
 import { publicRoutes } from "./routes/public.js";
@@ -15,10 +14,7 @@ const app = Fastify({
 
 await app.register(cors, {
   origin: env.CORS_ORIGIN.split(",").map((o) => o.trim()),
-  credentials: true,
 });
-
-await app.register(cookie);
 
 await app.register(rateLimit, {
   global: false,

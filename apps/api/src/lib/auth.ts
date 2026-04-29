@@ -5,11 +5,10 @@ import { db } from "../db/client.js";
 import { sessions, users, type UserRow } from "../db/schema.js";
 import { env } from "../env.js";
 
-export const SESSION_COOKIE = "fc_session";
 const SESSION_TTL_DAYS = 30;
 
 export type AuthContext =
-  | { kind: "user"; user: UserRow }
+  | { kind: "user"; user: UserRow; sessionId: string }
   | { kind: "token" }
   | { kind: "none" };
 
@@ -28,7 +27,7 @@ export async function destroySession(id: string): Promise<void> {
   await db.delete(sessions).where(eq(sessions.id, id));
 }
 
-export async function lookupSessionUser(
+async function lookupSessionUser(
   sessionId: string,
 ): Promise<UserRow | null> {
   const row = await db.query.sessions.findFirst({
@@ -41,37 +40,24 @@ export async function lookupSessionUser(
   return user ?? null;
 }
 
-export function checkAdminToken(authHeader: string | undefined): boolean {
-  if (!authHeader) return false;
-  const expected = `Bearer ${env.ADMIN_TOKEN}`;
-  if (authHeader.length !== expected.length) return false;
-  return timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected));
+function constantTimeEq(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
+
+function parseBearer(authHeader: string | undefined): string | null {
+  if (!authHeader) return null;
+  if (!authHeader.startsWith("Bearer ")) return null;
+  return authHeader.slice("Bearer ".length);
 }
 
 export async function resolveAuth(req: FastifyRequest): Promise<AuthContext> {
-  if (checkAdminToken(req.headers.authorization)) return { kind: "token" };
-  const sid = req.cookies[SESSION_COOKIE];
-  if (!sid) return { kind: "none" };
-  const user = await lookupSessionUser(sid);
+  const token = parseBearer(req.headers.authorization);
+  if (!token) return { kind: "none" };
+  if (constantTimeEq(token, env.ADMIN_TOKEN)) return { kind: "token" };
+  const user = await lookupSessionUser(token);
   if (!user) return { kind: "none" };
-  return { kind: "user", user };
-}
-
-export function sessionCookieOptions(): {
-  httpOnly: true;
-  secure: boolean;
-  sameSite: "lax" | "none";
-  path: string;
-  maxAge: number;
-} {
-  const isProd = env.NODE_ENV === "production";
-  return {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? "none" : "lax",
-    path: "/",
-    maxAge: SESSION_TTL_DAYS * 24 * 60 * 60,
-  };
+  return { kind: "user", user, sessionId: token };
 }
 
 const STATE_TTL_MS = 10 * 60 * 1000;
