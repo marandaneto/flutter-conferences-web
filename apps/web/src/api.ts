@@ -97,6 +97,7 @@ async function api<T>(path: string, init: ApiInit = {}): Promise<T> {
   const res = await fetch(url(path), {
     ...init,
     headers,
+    credentials: "include",
   });
   if (!res.ok) {
     const text = await res.text();

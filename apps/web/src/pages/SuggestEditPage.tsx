@@ -1,34 +1,18 @@
-import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { ConferenceForm } from "../components/ConferenceForm";
 import {
   getConferenceBySlug,
   getMe,
   githubLoginUrl,
-  setAdminToken,
   submitEdit,
   type AuthMe,
 } from "../api";
 
 export function SuggestEditPage() {
   const { slug } = useParams<{ slug: string }>();
-  const qc = useQueryClient();
   const [done, setDone] = useState(false);
-
-  // Capture session id from OAuth callback if present.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const hash = window.location.hash;
-    if (hash.startsWith("#session=")) {
-      const sid = hash.slice("#session=".length);
-      if (sid) {
-        setAdminToken(sid);
-        history.replaceState(null, "", window.location.pathname + window.location.search);
-        qc.invalidateQueries({ queryKey: ["auth", "me"] });
-      }
-    }
-  }, [qc]);
 
   const meQuery = useQuery<AuthMe>({
     queryKey: ["auth", "me"],

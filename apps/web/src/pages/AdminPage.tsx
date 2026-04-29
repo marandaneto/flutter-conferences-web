@@ -47,20 +47,6 @@ export function AdminPage() {
   const [tokenError, setTokenError] = useState<string | null>(null);
   const [params, setParams] = useSearchParams();
 
-  // Capture session id handed off via URL fragment after OAuth callback.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const hash = window.location.hash;
-    if (hash.startsWith("#session=")) {
-      const sid = hash.slice("#session=".length);
-      if (sid) {
-        setAdminToken(sid);
-        history.replaceState(null, "", window.location.pathname + window.location.search);
-        qc.invalidateQueries({ queryKey: ["auth", "me"] });
-      }
-    }
-  }, [qc]);
-
   const authError = params.get("auth_error");
   useEffect(() => {
     if (authError) {

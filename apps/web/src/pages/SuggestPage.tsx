@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { ConferenceForm } from "../components/ConferenceForm";
 import {
   getMe,
   githubLoginUrl,
-  setAdminToken,
   submitConference,
   type AuthMe,
 } from "../api";
@@ -18,23 +17,8 @@ const AUTH_ERRORS: Record<string, string> = {
 };
 
 export function SuggestPage() {
-  const qc = useQueryClient();
   const [params, setParams] = useSearchParams();
   const [done, setDone] = useState(false);
-
-  // Capture session id handed off via URL fragment after OAuth callback.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const hash = window.location.hash;
-    if (hash.startsWith("#session=")) {
-      const sid = hash.slice("#session=".length);
-      if (sid) {
-        setAdminToken(sid);
-        history.replaceState(null, "", window.location.pathname + window.location.search);
-        qc.invalidateQueries({ queryKey: ["auth", "me"] });
-      }
-    }
-  }, [qc]);
 
   const authError = params.get("auth_error");
   useEffect(() => {

@@ -5,6 +5,7 @@ import { db } from "../db/client.js";
 import { sessions, users, type UserRow } from "../db/schema.js";
 import { env } from "../env.js";
 
+export const SESSION_COOKIE = "fc_session";
 const SESSION_TTL_DAYS = 30;
 
 export type AuthContext =
@@ -52,12 +53,44 @@ function parseBearer(authHeader: string | undefined): string | null {
 }
 
 export async function resolveAuth(req: FastifyRequest): Promise<AuthContext> {
-  const token = parseBearer(req.headers.authorization);
-  if (!token) return { kind: "none" };
-  if (constantTimeEq(token, env.ADMIN_TOKEN)) return { kind: "token" };
-  const user = await lookupSessionUser(token);
-  if (!user) return { kind: "none" };
-  return { kind: "user", user, sessionId: token };
+  // 1. Authorization header — used for the break-glass admin token.
+  const bearer = parseBearer(req.headers.authorization);
+  if (bearer && constantTimeEq(bearer, env.ADMIN_TOKEN)) {
+    return { kind: "token" };
+  }
+
+  // 2. Session cookie (preferred path for signed-in users).
+  const cookieSid = req.cookies?.[SESSION_COOKIE];
+  if (cookieSid) {
+    const user = await lookupSessionUser(cookieSid);
+    if (user) return { kind: "user", user, sessionId: cookieSid };
+  }
+
+  // 3. Authorization Bearer as session id — back-compat for the
+  //    pre-cookie deploy where the web app stored the session in
+  //    localStorage. Drop after a transition window.
+  if (bearer) {
+    const user = await lookupSessionUser(bearer);
+    if (user) return { kind: "user", user, sessionId: bearer };
+  }
+
+  return { kind: "none" };
+}
+
+export function sessionCookieOptions(): {
+  httpOnly: true;
+  secure: boolean;
+  sameSite: "lax";
+  path: string;
+  maxAge: number;
+} {
+  return {
+    httpOnly: true,
+    secure: env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: SESSION_TTL_DAYS * 24 * 60 * 60,
+  };
 }
 
 const STATE_TTL_MS = 10 * 60 * 1000;

@@ -4,9 +4,11 @@ import { db } from "../db/client.js";
 import { invites, users, type UserRow } from "../db/schema.js";
 import { env } from "../env.js";
 import {
+  SESSION_COOKIE,
   createSessionForUser,
   destroySession,
   resolveAuth,
+  sessionCookieOptions,
   signOAuthState,
   verifyOAuthState,
 } from "../lib/auth.js";
@@ -47,11 +49,12 @@ export async function authRoutes(app: FastifyInstance) {
     return { authenticated: false };
   });
 
-  app.post("/api/auth/logout", async (req) => {
+  app.post("/api/auth/logout", async (req, reply) => {
     const auth = await resolveAuth(req);
     if (auth.kind === "user") {
       await destroySession(auth.sessionId);
     }
+    reply.clearCookie(SESSION_COOKIE, { path: "/" });
     return { ok: true };
   });
 
@@ -166,13 +169,14 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     const sid = await createSessionForUser(user.id);
-    return reply.redirect(joinReturnTo(env.WEB_URL, returnTo, sid));
+    reply.setCookie(SESSION_COOKIE, sid, sessionCookieOptions());
+    return reply.redirect(joinReturnTo(env.WEB_URL, returnTo));
   });
 }
 
-function joinReturnTo(webUrl: string, returnTo: string, sessionId: string): string {
+function joinReturnTo(webUrl: string, returnTo: string): string {
   const path = returnTo.startsWith("/") ? returnTo : "/admin";
-  return `${webUrl.replace(/\/$/, "")}${path}#session=${sessionId}`;
+  return `${webUrl.replace(/\/$/, "")}${path}`;
 }
 
 function redirectWithError(reply: any, returnTo: string, error: string) {
