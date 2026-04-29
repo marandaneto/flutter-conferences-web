@@ -41,3 +41,45 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: fc
+          POSTGRES_PASSWORD: fc
+          POSTGRES_DB: fc
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U fc"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://fc:fc@localhost:5433/fc_test
+      ADMIN_TOKEN: test-admin-token-must-be-long-enough
+      SESSION_SECRET: test-session-secret-must-be-long-enough
+      CORS_ORIGIN: http://localhost:5173
+      WEB_URL: http://localhost:5173
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test
+        run: pnpm test

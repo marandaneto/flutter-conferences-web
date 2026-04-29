@@ -11,6 +11,7 @@
     "db:migrate": "pnpm --filter @fc/api run db:migrate",
     "db:seed": "pnpm --filter @fc/api run db:seed",
     "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
