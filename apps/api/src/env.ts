@@ -12,6 +12,9 @@ const envSchema = z.object({
   GITHUB_OAUTH_CALLBACK_URL: z.string().url().optional(),
   WEB_URL: z.string().url().default("http://localhost:5173"),
   SESSION_SECRET: z.string().min(16).optional(),
+  RESEND_API_KEY: z.string().min(1).optional(),
+  NOTIFICATION_EMAIL: z.string().email().optional(),
+  NOTIFICATION_FROM: z.string().default("Flutter Conferences <onboarding@resend.dev>"),
 });
 
 export const env = envSchema.parse(process.env);
