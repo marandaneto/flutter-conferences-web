@@ -43,33 +43,9 @@ export async function submissionRoutes(app: FastifyInstance) {
       const data = parsed.data;
       const submitter = auth.user;
 
-      const duplicate = await db.query.conferences.findFirst({
-        where: and(
-          inArray(conferences.moderationStatus, ["pending", "approved"]),
-          or(
-            ilike(conferences.name, data.name),
-            eq(conferences.website, data.website),
-          ),
-          lte(conferences.dateStart, data.dateEnd),
-          gte(conferences.dateEnd, data.dateStart),
-        ),
-      });
+      const duplicate = await findDuplicate(data);
       if (duplicate) {
-        const stateLabel =
-          duplicate.moderationStatus === "approved"
-            ? "already listed"
-            : "awaiting review";
-        return reply.code(409).send({
-          error: "duplicate",
-          message: `"${duplicate.name}" (${duplicate.dateStart} → ${duplicate.dateEnd}) is ${stateLabel}.`,
-          existing: {
-            id: duplicate.id,
-            name: duplicate.name,
-            dateStart: duplicate.dateStart,
-            dateEnd: duplicate.dateEnd,
-            moderationStatus: duplicate.moderationStatus,
-          },
-        });
+        return reply.code(409).send(duplicateError(duplicate));
       }
 
       const slug = await uniqueSlug(makeSlug(data.name, data.dateStart));
@@ -147,6 +123,43 @@ async function notifyAdmins(
   `;
 
   await sendNotification(log, { subject, html, text });
+}
+
+export async function findDuplicate(input: {
+  name: string;
+  website: string;
+  dateStart: string;
+  dateEnd: string;
+}) {
+  return db.query.conferences.findFirst({
+    where: and(
+      inArray(conferences.moderationStatus, ["pending", "approved"]),
+      or(
+        ilike(conferences.name, input.name),
+        eq(conferences.website, input.website),
+      ),
+      lte(conferences.dateStart, input.dateEnd),
+      gte(conferences.dateEnd, input.dateStart),
+    ),
+  });
+}
+
+export function duplicateError(duplicate: typeof conferences.$inferSelect) {
+  const stateLabel =
+    duplicate.moderationStatus === "approved"
+      ? "already listed"
+      : "awaiting review";
+  return {
+    error: "duplicate" as const,
+    message: `"${duplicate.name}" (${duplicate.dateStart} → ${duplicate.dateEnd}) is ${stateLabel}.`,
+    existing: {
+      id: duplicate.id,
+      name: duplicate.name,
+      dateStart: duplicate.dateStart,
+      dateEnd: duplicate.dateEnd,
+      moderationStatus: duplicate.moderationStatus,
+    },
+  };
 }
 
 async function uniqueSlug(base: string): Promise<string> {

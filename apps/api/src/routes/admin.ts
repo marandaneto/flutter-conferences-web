@@ -15,6 +15,7 @@ import { rowToConference } from "../lib/serialize.js";
 import { resolveAuth } from "../lib/auth.js";
 import { sendEmail, escapeHtml } from "../lib/email.js";
 import { env } from "../env.js";
+import { findDuplicate, duplicateError } from "./submissions.js";
 
 export async function adminRoutes(app: FastifyInstance) {
   app.addHook("onRequest", async (req, reply) => {
@@ -50,6 +51,16 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ issues: parsed.error.flatten() });
     }
     const d = parsed.data;
+
+    const overrideDuplicate =
+      (req.query as { overrideDuplicate?: string }).overrideDuplicate === "1";
+    if (!overrideDuplicate) {
+      const duplicate = await findDuplicate(d);
+      if (duplicate) {
+        return reply.code(409).send(duplicateError(duplicate));
+      }
+    }
+
     const slug = await uniqueSlug(makeSlug(d.name, d.dateStart));
     const [row] = await db
       .insert(conferences)

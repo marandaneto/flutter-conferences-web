@@ -516,8 +516,20 @@ function AllTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }
 
 function NewTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }) {
   const qc = useQueryClient();
+  const [done, setDone] = useState(false);
+  const [duplicate, setDuplicate] = useState<{
+    message: string;
+    input: ConferenceInput;
+  } | null>(null);
+
   const create = useMutation({
-    mutationFn: adminCreate,
+    mutationFn: ({
+      input,
+      overrideDuplicate,
+    }: {
+      input: ConferenceInput;
+      overrideDuplicate?: boolean;
+    }) => adminCreate(input, { overrideDuplicate }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin"] }),
     onError: (err) => {
       if (err instanceof ApiError && err.status === 401) {
@@ -525,13 +537,18 @@ function NewTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }
       }
     },
   });
-  const [done, setDone] = useState(false);
 
   if (done) {
     return (
       <div className="rounded-md bg-emerald-50 border border-emerald-200 p-4 text-emerald-900">
         Conference created.
-        <button className="ml-3 underline" onClick={() => setDone(false)}>
+        <button
+          className="ml-3 underline"
+          onClick={() => {
+            setDone(false);
+            setDuplicate(null);
+          }}
+        >
           Add another
         </button>
       </div>
@@ -539,13 +556,50 @@ function NewTab({ onUnauthorized }: { onUnauthorized: (reason: string) => void }
   }
 
   return (
-    <ConferenceForm
-      submitLabel="Create"
-      onSubmit={async (input) => {
-        await create.mutateAsync(input);
-        setDone(true);
-      }}
-    />
+    <div className="space-y-4">
+      {duplicate && (
+        <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm">
+          <p className="text-amber-900 mb-2">{duplicate.message}</p>
+          <button
+            type="button"
+            onClick={async () => {
+              await create.mutateAsync({
+                input: duplicate.input,
+                overrideDuplicate: true,
+              });
+              setDuplicate(null);
+              setDone(true);
+            }}
+            className="px-3 py-1 bg-slate-900 text-white rounded text-sm"
+          >
+            Submit anyway
+          </button>
+          <button
+            type="button"
+            onClick={() => setDuplicate(null)}
+            className="ml-2 text-sm text-slate-600 underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+      <ConferenceForm
+        submitLabel="Create"
+        onSubmit={async (input) => {
+          try {
+            await create.mutateAsync({ input });
+            setDuplicate(null);
+            setDone(true);
+          } catch (err) {
+            if (err instanceof ApiError && err.status === 409) {
+              setDuplicate({ message: err.message, input });
+              return;
+            }
+            throw err;
+          }
+        }}
+      />
+    </div>
   );
 }
 

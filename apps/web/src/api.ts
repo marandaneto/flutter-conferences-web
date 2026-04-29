@@ -150,8 +150,14 @@ export function adminList(status?: "pending" | "approved" | "rejected") {
   );
 }
 
-export function adminCreate(input: ConferenceInput) {
-  return api<Conference>("/api/admin/conferences", { method: "POST", json: input });
+export function adminCreate(
+  input: ConferenceInput,
+  opts?: { overrideDuplicate?: boolean },
+) {
+  const path = opts?.overrideDuplicate
+    ? "/api/admin/conferences?overrideDuplicate=1"
+    : "/api/admin/conferences";
+  return api<Conference>(path, { method: "POST", json: input });
 }
 
 export function adminUpdate(id: string, input: Partial<ConferenceInput>) {
