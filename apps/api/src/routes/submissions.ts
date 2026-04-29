@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { and, eq, gte, ilike, inArray, lte, or } from "drizzle-orm";
 import { conferenceInputSchema } from "@fc/shared";
 import { z } from "zod";
 import { db } from "../db/client.js";
@@ -41,6 +42,35 @@ export async function submissionRoutes(app: FastifyInstance) {
       }
       const data = parsed.data;
       const submitter = auth.user;
+
+      const duplicate = await db.query.conferences.findFirst({
+        where: and(
+          inArray(conferences.moderationStatus, ["pending", "approved"]),
+          or(
+            ilike(conferences.name, data.name),
+            eq(conferences.website, data.website),
+          ),
+          lte(conferences.dateStart, data.dateEnd),
+          gte(conferences.dateEnd, data.dateStart),
+        ),
+      });
+      if (duplicate) {
+        const stateLabel =
+          duplicate.moderationStatus === "approved"
+            ? "already listed"
+            : "awaiting review";
+        return reply.code(409).send({
+          error: "duplicate",
+          message: `"${duplicate.name}" (${duplicate.dateStart} → ${duplicate.dateEnd}) is ${stateLabel}.`,
+          existing: {
+            id: duplicate.id,
+            name: duplicate.name,
+            dateStart: duplicate.dateStart,
+            dateEnd: duplicate.dateEnd,
+            moderationStatus: duplicate.moderationStatus,
+          },
+        });
+      }
 
       const slug = await uniqueSlug(makeSlug(data.name, data.dateStart));
 

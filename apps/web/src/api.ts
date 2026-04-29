@@ -79,8 +79,16 @@ async function api<T>(path: string, init: ApiInit = {}): Promise<T> {
     headers,
   });
   if (!res.ok) {
-    const body = await res.text();
-    throw new ApiError(res.status, `${res.status} ${body}`);
+    const text = await res.text();
+    let message = `${res.status} ${text}`;
+    try {
+      const body = JSON.parse(text);
+      if (body?.message) message = body.message;
+      else if (body?.error) message = body.error;
+    } catch {
+      // body wasn't JSON; keep the raw text fallback.
+    }
+    throw new ApiError(res.status, message);
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
