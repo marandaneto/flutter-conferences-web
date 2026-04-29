@@ -12,6 +12,11 @@ import { googleCalendarUrl, icsDataUrl, icsFilename } from "../lib/calendar";
 
 const badge = "inline-block ml-2 px-2 py-0.5 text-xs rounded";
 
+function formatDate(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return `${d}.${m}.${y}`;
+}
+
 export function ConferenceItem({ c }: { c: Conference }) {
   const isPast = todayMidnight() > dateAtMidnight(c.dateEnd);
   const happening = isHappeningNow(c);
@@ -26,7 +31,9 @@ export function ConferenceItem({ c }: { c: Conference }) {
 
   return (
     <li className={`py-2 ${isPast ? "text-slate-400" : ""}`}>
-      <span className="tabular-nums text-sm text-slate-600">{c.dateStart}</span>{" "}
+      <span className="tabular-nums text-sm text-slate-600">
+        {formatDate(c.dateStart)}
+      </span>{" "}
       <a
         className="text-sky-700 hover:underline font-medium"
         href={c.website}
@@ -45,7 +52,7 @@ export function ConferenceItem({ c }: { c: Conference }) {
           target="_blank"
           rel="noreferrer"
         >
-          Call For Papers until {c.cfp.end}
+          Call For Papers until {formatDate(c.cfp.end)}
         </a>
       )}
       {c.eventStatus && (
