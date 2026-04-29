@@ -20,6 +20,13 @@ const inputClass =
   "w-full border border-slate-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-500";
 const labelClass = "block text-sm font-medium text-slate-700 mb-1";
 
+function normalizeUrl(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 export function ConferenceForm({
   initial,
   submitLabel,
@@ -52,14 +59,18 @@ export function ConferenceForm({
 
     const candidate = {
       name,
-      website,
+      website: normalizeUrl(website),
       location,
       online,
       eventStatus: eventStatus || null,
       dateStart,
       dateEnd,
       cfp: hasCfp
-        ? { start: cfpStart, end: cfpEnd, site: cfpSite || null }
+        ? {
+            start: cfpStart,
+            end: cfpEnd,
+            site: cfpSite ? normalizeUrl(cfpSite) : null,
+          }
         : null,
     };
 
@@ -89,7 +100,15 @@ export function ConferenceForm({
       </div>
       <div>
         <label className={labelClass}>Website</label>
-        <input className={inputClass} type="url" value={website} onChange={(e) => setWebsite(e.target.value)} required />
+        <input
+          className={inputClass}
+          type="text"
+          inputMode="url"
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+          placeholder="example.com or https://example.com"
+          required
+        />
       </div>
       <div>
         <label className={labelClass}>Location</label>
@@ -140,7 +159,14 @@ export function ConferenceForm({
             </div>
             <div>
               <label className={labelClass}>CFP site (optional)</label>
-              <input className={inputClass} type="url" value={cfpSite} onChange={(e) => setCfpSite(e.target.value)} />
+              <input
+                className={inputClass}
+                type="text"
+                inputMode="url"
+                value={cfpSite}
+                onChange={(e) => setCfpSite(e.target.value)}
+                placeholder="example.com or https://example.com"
+              />
             </div>
           </div>
         )}
