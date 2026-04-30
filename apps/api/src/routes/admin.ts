@@ -26,7 +26,7 @@ export async function adminRoutes(app: FastifyInstance) {
     if (auth.kind === "user" && !auth.user.isAdmin) {
       return reply.code(403).send({ error: "not an admin" });
     }
-    (req as any).auth = auth;
+    req.auth = auth;
   });
 
   app.get("/api/admin/conferences", async (req) => {
@@ -249,8 +249,7 @@ export async function adminRoutes(app: FastifyInstance) {
       await db.delete(invites).where(eq(invites.id, existingInvite.id));
     }
 
-    const auth = (req as any).auth;
-    const invitedBy = auth?.kind === "user" ? auth.user.id : null;
+    const invitedBy = req.auth?.kind === "user" ? req.auth.user.id : null;
     const [row] = await db
       .insert(invites)
       .values({ githubLogin: login, invitedBy })

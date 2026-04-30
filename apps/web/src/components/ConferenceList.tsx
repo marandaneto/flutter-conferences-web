@@ -1,20 +1,23 @@
 import { useMemo, useState } from "react";
-import type { Conference } from "@fc/shared";
+import { cfpIsOpen, type Conference } from "@fc/shared";
 import { ConferenceItem } from "./ConferenceItem";
 
 type Props = {
   conferences: Conference[];
   showOnlineToggle?: boolean;
   showYearFilter?: boolean;
+  showCfpToggle?: boolean;
 };
 
 export function ConferenceList({
   conferences,
   showOnlineToggle,
   showYearFilter,
+  showCfpToggle,
 }: Props) {
   const [query, setQuery] = useState("");
   const [onlineOnly, setOnlineOnly] = useState(false);
+  const [cfpOpenOnly, setCfpOpenOnly] = useState(false);
   const [year, setYear] = useState<string>("all");
 
   const years = useMemo(() => {
@@ -32,10 +35,11 @@ export function ConferenceList({
         if (!haystack.includes(q)) return false;
       }
       if (onlineOnly && !c.online) return false;
+      if (cfpOpenOnly && !cfpIsOpen(c)) return false;
       if (year !== "all" && c.dateStart.slice(0, 4) !== year) return false;
       return true;
     });
-  }, [conferences, query, onlineOnly, year]);
+  }, [conferences, query, onlineOnly, cfpOpenOnly, year]);
 
   return (
     <div>
@@ -55,6 +59,16 @@ export function ConferenceList({
               onChange={(e) => setOnlineOnly(e.target.checked)}
             />
             Online only
+          </label>
+        )}
+        {showCfpToggle && (
+          <label className="flex items-center gap-1.5 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={cfpOpenOnly}
+              onChange={(e) => setCfpOpenOnly(e.target.checked)}
+            />
+            CFP open
           </label>
         )}
         {showYearFilter && years.length > 1 && (

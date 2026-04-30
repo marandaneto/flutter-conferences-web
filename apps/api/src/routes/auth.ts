@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply } from "fastify";
 import { eq } from "drizzle-orm";
 import { db } from "../db/client.js";
 import { invites, users, type UserRow } from "../db/schema.js";
@@ -190,7 +190,11 @@ function joinReturnTo(webUrl: string, returnTo: string): string {
   return `${webUrl.replace(/\/$/, "")}${path}`;
 }
 
-function redirectWithError(reply: any, returnTo: string, error: string) {
+function redirectWithError(
+  reply: FastifyReply,
+  returnTo: string,
+  error: string,
+) {
   const path = returnTo.startsWith("/") ? returnTo : "/admin";
   const url = new URL(path, env.WEB_URL);
   url.searchParams.set("auth_error", error);

@@ -10,5 +10,5 @@ export function UpcomingPage() {
 
   if (isLoading) return <p>Loading…</p>;
   if (error) return <p className="text-rose-700">Failed to load.</p>;
-  return <ConferenceList conferences={data!} showOnlineToggle />;
+  return <ConferenceList conferences={data!} showOnlineToggle showCfpToggle />;
 }
