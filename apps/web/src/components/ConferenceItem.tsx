@@ -48,7 +48,7 @@ export function ConferenceItem({ c }: { c: Conference }) {
         {formatRange(c.dateStart, c.dateEnd)}
       </span>
 
-      <span className={`${cell} text-right`}>
+      <span className={`${cell} text-right whitespace-nowrap`}>
         <a
           className="text-sky-700 hover:underline font-medium"
           href={c.website}

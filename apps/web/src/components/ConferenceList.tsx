@@ -94,7 +94,7 @@ export function ConferenceList({
           <p className="text-xs text-slate-500 mb-2">
             {filtered.length} of {conferences.length}
           </p>
-          <ul className="grid grid-cols-[max-content_minmax(0,1fr)_max-content_max-content_max-content_max-content] gap-x-3 [&>li:first-child>*]:border-t-0">
+          <ul className="grid grid-cols-[repeat(6,max-content)] gap-x-3 [&>li:first-child>*]:border-t-0">
             {filtered.map((c) => (
               <ConferenceItem key={c.id} c={c} />
             ))}
