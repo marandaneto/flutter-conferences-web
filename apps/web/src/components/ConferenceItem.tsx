@@ -10,7 +10,7 @@ import {
 import { getMe, type AuthMe } from "../api";
 import { googleCalendarUrl, icsDataUrl, icsFilename } from "../lib/calendar";
 
-const badge = "inline-block ml-2 px-2 py-0.5 text-xs rounded";
+const badge = "inline-block px-2 py-0.5 text-xs rounded";
 
 function formatDate(iso: string): string {
   const [y, m, d] = iso.split("-");
@@ -38,16 +38,17 @@ export function ConferenceItem({ c }: { c: Conference }) {
   });
   const canSuggestEdit = me?.authenticated && me.kind === "user";
 
-  const cellClass = `py-2 border-t border-slate-200 ${isPast ? "text-slate-400" : ""}`;
+  const cell = `py-2 border-t border-slate-200 align-baseline ${isPast ? "text-slate-400" : ""}`;
 
   return (
     <li className="contents">
       <span
-        className={`${cellClass} tabular-nums text-sm text-slate-600 whitespace-nowrap text-right`}
+        className={`${cell} tabular-nums text-sm text-slate-600 whitespace-nowrap text-right`}
       >
         {formatRange(c.dateStart, c.dateEnd)}
       </span>
-      <div className={cellClass}>
+
+      <span className={cell}>
         <a
           className="text-sky-700 hover:underline font-medium"
           href={c.website}
@@ -56,9 +57,28 @@ export function ConferenceItem({ c }: { c: Conference }) {
         >
           {c.name}
         </a>
-        {c.location && (
-          <span className="text-sm text-slate-500"> {c.location}</span>
+        {c.eventStatus && (
+          <span className={`${badge} bg-rose-100 text-rose-800 ml-2`}>
+            {c.eventStatus}
+          </span>
         )}
+        {happening && (
+          <span className={`${badge} bg-emerald-100 text-emerald-800 ml-2`}>
+            Happening Now
+          </span>
+        )}
+      </span>
+
+      <span className={`${cell} text-sm text-slate-500 whitespace-nowrap`}>
+        {c.location}
+        {c.online && (
+          <span className={`${badge} bg-indigo-100 text-indigo-800 ml-2`}>
+            Online
+          </span>
+        )}
+      </span>
+
+      <span className={`${cell} whitespace-nowrap`}>
         {showCfp && c.cfp && (
           <a
             className={`${badge} bg-sky-100 text-sky-800 hover:bg-sky-200`}
@@ -66,24 +86,12 @@ export function ConferenceItem({ c }: { c: Conference }) {
             target="_blank"
             rel="noreferrer"
           >
-            Call For Papers until {formatDate(c.cfp.end)}
+            CFP until {formatDate(c.cfp.end)}
           </a>
         )}
-        {c.eventStatus && (
-          <span className={`${badge} bg-rose-100 text-rose-800`}>
-            {c.eventStatus}
-          </span>
-        )}
-        {c.online && (
-          <span className={`${badge} bg-indigo-100 text-indigo-800`}>
-            Online-only event
-          </span>
-        )}
-        {happening && (
-          <span className={`${badge} bg-emerald-100 text-emerald-800`}>
-            Happening Now
-          </span>
-        )}
+      </span>
+
+      <span className={`${cell} whitespace-nowrap`}>
         {!isPast && (
           <>
             <a
@@ -92,7 +100,7 @@ export function ConferenceItem({ c }: { c: Conference }) {
               rel="noreferrer"
               title="Add to Google Calendar"
               aria-label="Add to Google Calendar"
-              className="ml-2 text-slate-400 hover:text-slate-700"
+              className="text-slate-400 hover:text-slate-700"
             >
               📅
             </a>
@@ -107,15 +115,18 @@ export function ConferenceItem({ c }: { c: Conference }) {
             </a>
           </>
         )}
+      </span>
+
+      <span className={`${cell} whitespace-nowrap`}>
         {canSuggestEdit && (
           <Link
             to={`/suggest-edit/${c.slug}`}
-            className="ml-2 text-xs text-slate-500 hover:text-slate-700 underline"
+            className="text-xs text-slate-500 hover:text-slate-700 underline"
           >
             Suggest edit
           </Link>
         )}
-      </div>
+      </span>
     </li>
   );
 }
