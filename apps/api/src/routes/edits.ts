@@ -5,7 +5,7 @@ import { z } from "zod";
 import { db } from "../db/client.js";
 import { conferences, conferenceEdits } from "../db/schema.js";
 import { resolveAuth } from "../lib/auth.js";
-import { sendNotification, escapeHtml } from "../lib/email.js";
+import { sendAdminNotification, escapeHtml } from "../lib/email.js";
 import { env } from "../env.js";
 
 const editBodySchema = conferenceInputSchema.and(
@@ -98,5 +98,5 @@ async function notifyAdminsOnEdit(
     ${edit.submissionNote ? `<p><strong>Note:</strong> ${escapeHtml(edit.submissionNote)}</p>` : ""}
     <p><a href="${adminUrl}">Review in admin</a></p>
   `;
-  await sendNotification(log, { subject, html, text });
+  await sendAdminNotification(log, { subject, html, text });
 }

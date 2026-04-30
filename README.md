@@ -97,7 +97,8 @@ Required env vars on `@fc/api`:
 - `WEB_URL` — canonical web origin used in OAuth redirects and email links
 - `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_OAUTH_CALLBACK_URL` — your GitHub OAuth app
 - `SESSION_SECRET` — used to HMAC-sign the OAuth state parameter
-- `RESEND_API_KEY`, `NOTIFICATION_EMAIL` — for admin notifications and submitter emails
+- `RESEND_API_KEY` — Resend API key for outbound email
+- `NOTIFICATION_EMAIL` (optional) — fallback recipient for admin notifications when no admin user has an email set; admin notifications normally go to all `users` rows where `is_admin = true` and `email IS NOT NULL`
 - `NOTIFICATION_FROM` (optional) — sender override; defaults to Resend's `onboarding@resend.dev`
 
 Required env vars on `@fc/web`:

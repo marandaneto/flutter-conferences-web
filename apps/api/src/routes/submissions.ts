@@ -7,7 +7,7 @@ import { conferences } from "../db/schema.js";
 import { makeSlug } from "../lib/slug.js";
 import { rowToConference } from "../lib/serialize.js";
 import { resolveAuth } from "../lib/auth.js";
-import { sendNotification, escapeHtml } from "../lib/email.js";
+import { sendAdminNotification, escapeHtml } from "../lib/email.js";
 import { env } from "../env.js";
 
 const submissionBodySchema = conferenceInputSchema.and(
@@ -121,7 +121,7 @@ async function notifyAdmins(
     <p><a href="${adminUrl}">Review in admin</a></p>
   `;
 
-  await sendNotification(log, { subject, html, text });
+  await sendAdminNotification(log, { subject, html, text });
 }
 
 export async function findDuplicate(input: {

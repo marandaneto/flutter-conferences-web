@@ -1,7 +1,10 @@
+import { and, eq, isNotNull } from "drizzle-orm";
 import { env } from "../env.js";
+import { db } from "../db/client.js";
+import { users } from "../db/schema.js";
 
 type SendArgs = {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
   text: string;
@@ -12,6 +15,8 @@ export async function sendEmail(
   args: SendArgs,
 ): Promise<void> {
   if (!env.RESEND_API_KEY) return;
+  const recipients = Array.isArray(args.to) ? args.to : [args.to];
+  if (recipients.length === 0) return;
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -22,7 +27,7 @@ export async function sendEmail(
       },
       body: JSON.stringify({
         from: env.NOTIFICATION_FROM,
-        to: [args.to],
+        to: recipients,
         subject: args.subject,
         html: args.html,
         text: args.text,
@@ -31,21 +36,37 @@ export async function sendEmail(
     if (!res.ok) {
       const body = await res.text();
       log.error(
-        { status: res.status, body, to: args.to },
+        { status: res.status, body, to: recipients },
         "resend send failed",
       );
     }
   } catch (err) {
-    log.error({ err, to: args.to }, "resend send threw");
+    log.error({ err, to: recipients }, "resend send threw");
   }
 }
 
-export async function sendNotification(
+async function adminEmailRecipients(): Promise<string[]> {
+  const rows = await db
+    .select({ email: users.email })
+    .from(users)
+    .where(and(eq(users.isAdmin, true), isNotNull(users.email)));
+  const emails = rows
+    .map((r) => r.email)
+    .filter((e): e is string => typeof e === "string" && e.length > 0);
+
+  if (emails.length === 0 && env.NOTIFICATION_EMAIL) {
+    return [env.NOTIFICATION_EMAIL];
+  }
+  return emails;
+}
+
+export async function sendAdminNotification(
   log: { error: (...args: unknown[]) => void },
   args: Omit<SendArgs, "to">,
 ): Promise<void> {
-  if (!env.NOTIFICATION_EMAIL) return;
-  await sendEmail(log, { ...args, to: env.NOTIFICATION_EMAIL });
+  const to = await adminEmailRecipients();
+  if (to.length === 0) return;
+  await sendEmail(log, { ...args, to });
 }
 
 export function escapeHtml(value: string): string {

@@ -16,6 +16,31 @@ import {
 const GITHUB_AUTHORIZE = "https://github.com/login/oauth/authorize";
 const GITHUB_TOKEN = "https://github.com/login/oauth/access_token";
 const GITHUB_USER = "https://api.github.com/user";
+const GITHUB_USER_EMAILS = "https://api.github.com/user/emails";
+
+async function fetchPrimaryEmail(accessToken: string): Promise<string | null> {
+  try {
+    const res = await fetch(GITHUB_USER_EMAILS, {
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        accept: "application/vnd.github+json",
+        "user-agent": "flutterconferences",
+      },
+    });
+    if (!res.ok) return null;
+    const emails = (await res.json()) as Array<{
+      email: string;
+      primary: boolean;
+      verified: boolean;
+    }>;
+    const primary = emails.find((e) => e.primary && e.verified);
+    if (primary) return primary.email;
+    const anyVerified = emails.find((e) => e.verified);
+    return anyVerified?.email ?? null;
+  } catch {
+    return null;
+  }
+}
 
 function publicUser(u: UserRow) {
   return {
@@ -137,6 +162,12 @@ export async function authRoutes(app: FastifyInstance) {
       email: string | null;
       avatar_url: string | null;
     };
+
+    // GitHub returns `email: null` for users who keep their email private.
+    // Fall back to the primary verified email which the user:email scope grants.
+    if (!ghUser.email) {
+      ghUser.email = await fetchPrimaryEmail(tokenJson.access_token);
+    }
 
     const pendingInvite = await db.query.invites.findFirst({
       where: eq(invites.githubLogin, ghUser.login),
