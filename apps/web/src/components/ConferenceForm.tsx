@@ -135,7 +135,11 @@ export function ConferenceForm({
             className={inputClass}
             type="date"
             value={dateStart}
-            onChange={(e) => setDateStart(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setDateStart(v);
+              if (v && (!dateEnd || dateEnd < v)) setDateEnd(v);
+            }}
             required
           />
         </div>
@@ -145,6 +149,7 @@ export function ConferenceForm({
             className={inputClass}
             type="date"
             value={dateEnd}
+            min={dateStart || undefined}
             onChange={(e) => setDateEnd(e.target.value)}
             required
           />
@@ -197,7 +202,11 @@ export function ConferenceForm({
                   className={inputClass}
                   type="date"
                   value={cfpStart}
-                  onChange={(e) => setCfpStart(e.target.value)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCfpStart(v);
+                    if (v && (!cfpEnd || cfpEnd < v)) setCfpEnd(v);
+                  }}
                   required
                 />
               </div>
@@ -206,6 +215,7 @@ export function ConferenceForm({
                 <input
                   className={inputClass}
                   type="date"
+                  min={cfpStart || undefined}
                   value={cfpEnd}
                   onChange={(e) => setCfpEnd(e.target.value)}
                   required
