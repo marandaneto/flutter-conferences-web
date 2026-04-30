@@ -45,7 +45,7 @@ export async function sendEmail(
   }
 }
 
-async function adminEmailRecipients(): Promise<string[]> {
+export async function adminEmailRecipients(): Promise<string[]> {
   const rows = await db
     .select({ email: users.email })
     .from(users)
