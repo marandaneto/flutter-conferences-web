@@ -17,6 +17,15 @@ function formatDate(iso: string): string {
   return `${d}.${m}.${y}`;
 }
 
+function formatRange(start: string, end: string): string {
+  if (start === end) return formatDate(start);
+  const [sy, sm, sd] = start.split("-");
+  const [ey, em, ed] = end.split("-");
+  if (sy === ey && sm === em) return `${sd}–${ed}.${sm}.${sy}`;
+  if (sy === ey) return `${sd}.${sm}–${ed}.${em}.${sy}`;
+  return `${formatDate(start)} – ${formatDate(end)}`;
+}
+
 export function ConferenceItem({ c }: { c: Conference }) {
   const isPast = todayMidnight() > dateAtMidnight(c.dateEnd);
   const happening = isHappeningNow(c);
@@ -32,7 +41,7 @@ export function ConferenceItem({ c }: { c: Conference }) {
   return (
     <li className={`py-2 ${isPast ? "text-slate-400" : ""}`}>
       <span className="tabular-nums text-sm text-slate-600">
-        {formatDate(c.dateStart)}
+        {formatRange(c.dateStart, c.dateEnd)}
       </span>{" "}
       <a
         className="text-sky-700 hover:underline font-medium"
