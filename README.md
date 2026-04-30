@@ -111,4 +111,4 @@ Drizzle migrations live in `apps/api/drizzle/`. Generate with `pnpm db:generate`
 
 ## License
 
-[MIT](LICENSE) — code. Conference data carries forward the original CC0 dedication.
+[MIT](LICENSE)

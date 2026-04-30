@@ -36,13 +36,6 @@ export function Layout() {
           href={`${import.meta.env.VITE_API_URL ?? ""}/conferences.ics`}
         >
           iCalendar
-        </a>{" "}
-        ·{" "}
-        <a
-          className="underline"
-          href="https://creativecommons.org/publicdomain/zero/1.0/"
-        >
-          CC0
         </a>
       </footer>
     </div>
