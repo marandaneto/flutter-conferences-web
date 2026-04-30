@@ -38,78 +38,84 @@ export function ConferenceItem({ c }: { c: Conference }) {
   });
   const canSuggestEdit = me?.authenticated && me.kind === "user";
 
+  const cellClass = `py-2 border-t border-slate-200 ${isPast ? "text-slate-400" : ""}`;
+
   return (
-    <li className={`py-2 ${isPast ? "text-slate-400" : ""}`}>
-      <span className="tabular-nums text-sm text-slate-600">
-        {formatRange(c.dateStart, c.dateEnd)}
-      </span>{" "}
-      <a
-        className="text-sky-700 hover:underline font-medium"
-        href={c.website}
-        target="_blank"
-        rel="noreferrer"
+    <li className="contents">
+      <span
+        className={`${cellClass} tabular-nums text-sm text-slate-600 whitespace-nowrap`}
       >
-        {c.name}
-      </a>
-      {c.location && (
-        <span className="text-sm text-slate-500"> {c.location}</span>
-      )}
-      {showCfp && c.cfp && (
+        {formatRange(c.dateStart, c.dateEnd)}
+      </span>
+      <div className={cellClass}>
         <a
-          className={`${badge} bg-sky-100 text-sky-800 hover:bg-sky-200`}
-          href={c.cfp.site ?? c.website}
+          className="text-sky-700 hover:underline font-medium"
+          href={c.website}
           target="_blank"
           rel="noreferrer"
         >
-          Call For Papers until {formatDate(c.cfp.end)}
+          {c.name}
         </a>
-      )}
-      {c.eventStatus && (
-        <span className={`${badge} bg-rose-100 text-rose-800`}>
-          {c.eventStatus}
-        </span>
-      )}
-      {c.online && (
-        <span className={`${badge} bg-indigo-100 text-indigo-800`}>
-          Online-only event
-        </span>
-      )}
-      {happening && (
-        <span className={`${badge} bg-emerald-100 text-emerald-800`}>
-          Happening Now
-        </span>
-      )}
-      {!isPast && (
-        <>
+        {c.location && (
+          <span className="text-sm text-slate-500"> {c.location}</span>
+        )}
+        {showCfp && c.cfp && (
           <a
-            href={googleCalendarUrl(c)}
+            className={`${badge} bg-sky-100 text-sky-800 hover:bg-sky-200`}
+            href={c.cfp.site ?? c.website}
             target="_blank"
             rel="noreferrer"
-            title="Add to Google Calendar"
-            aria-label="Add to Google Calendar"
-            className="ml-2 text-slate-400 hover:text-slate-700"
           >
-            📅
+            Call For Papers until {formatDate(c.cfp.end)}
           </a>
-          <a
-            href={icsDataUrl(c)}
-            download={icsFilename(c)}
-            title="Download .ics for Apple Calendar / Outlook"
-            aria-label="Download .ics"
-            className="ml-1 text-slate-400 hover:text-slate-700"
+        )}
+        {c.eventStatus && (
+          <span className={`${badge} bg-rose-100 text-rose-800`}>
+            {c.eventStatus}
+          </span>
+        )}
+        {c.online && (
+          <span className={`${badge} bg-indigo-100 text-indigo-800`}>
+            Online-only event
+          </span>
+        )}
+        {happening && (
+          <span className={`${badge} bg-emerald-100 text-emerald-800`}>
+            Happening Now
+          </span>
+        )}
+        {!isPast && (
+          <>
+            <a
+              href={googleCalendarUrl(c)}
+              target="_blank"
+              rel="noreferrer"
+              title="Add to Google Calendar"
+              aria-label="Add to Google Calendar"
+              className="ml-2 text-slate-400 hover:text-slate-700"
+            >
+              📅
+            </a>
+            <a
+              href={icsDataUrl(c)}
+              download={icsFilename(c)}
+              title="Download .ics for Apple Calendar / Outlook"
+              aria-label="Download .ics"
+              className="ml-1 text-slate-400 hover:text-slate-700"
+            >
+              📥
+            </a>
+          </>
+        )}
+        {canSuggestEdit && (
+          <Link
+            to={`/suggest-edit/${c.slug}`}
+            className="ml-2 text-xs text-slate-500 hover:text-slate-700 underline"
           >
-            📥
-          </a>
-        </>
-      )}
-      {canSuggestEdit && (
-        <Link
-          to={`/suggest-edit/${c.slug}`}
-          className="ml-2 text-xs text-slate-500 hover:text-slate-700 underline"
-        >
-          Suggest edit
-        </Link>
-      )}
+            Suggest edit
+          </Link>
+        )}
+      </div>
     </li>
   );
 }
