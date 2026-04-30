@@ -43,7 +43,7 @@ export function ConferenceItem({ c }: { c: Conference }) {
   return (
     <li className="contents">
       <span
-        className={`${cellClass} tabular-nums text-sm text-slate-600 whitespace-nowrap`}
+        className={`${cellClass} tabular-nums text-sm text-slate-600 whitespace-nowrap text-right`}
       >
         {formatRange(c.dateStart, c.dateEnd)}
       </span>
